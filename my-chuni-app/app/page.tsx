@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import { GoogleAuthProvider, signInWithRedirect, User, onAuthStateChanged } from 'firebase/auth';
+import { GoogleAuthProvider, signInWithRedirect, getRedirectResult, User, onAuthStateChanged } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 
 // ⚠️ 본인의 구조에 맞게 경로 확인
@@ -98,19 +98,26 @@ export default function Home() {
       });
     };
 
-  // ⭐️ 새로 추가할 부분: 페이지가 열릴 때 로그인 상태를 감지하는 안테나
   useEffect(() => {
+    // ⭐️ 추가 1: 구글 로그인 후 사이트로 리디렉트 되어 돌아왔을 때 결과를 처리
+    getRedirectResult(auth)
+      .then((result) => {
+        if (result && result.user) {
+          console.log("리디렉트 로그인 성공!", result.user);
+          setUser(result.user);
+        }
+      })
+      .catch((error) => {
+        console.error("리디렉트 처리 중 에러 발생:", error);
+      });
+
+    // ⭐️ 추가 2: 평상시 로그인 상태 유지 안테나 (기존에 추가하신 부분)
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       if (currentUser) {
-        // 방금 로그인하고 돌아왔거나, 이미 로그인되어 있는 경우
         setUser(currentUser);
-      } else {
-        // 로그인되어 있지 않은 경우
-        setUser(null);
       }
     });
 
-    // 컴포넌트가 꺼질 때 안테나 해제 (메모리 누수 방지)
     return () => unsubscribe();
   }, []);
 
