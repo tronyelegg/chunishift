@@ -53,6 +53,7 @@ export default function Home() {
   const [playerData, setPlayerData] = useState<any>(null);
   const [calculatedTotalRating, setCalculatedTotalRating] = useState<number>(0);
   const [isDarkMode, setIsDarkMode] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(true); // ⭐️ 로딩 상태 추가
 
   // 다크모드 초기 세팅
   useEffect(() => {
@@ -67,26 +68,49 @@ export default function Home() {
     setIsDarkMode(!isDarkMode);
   };
 
+  // ⭐️ 인증(로그인) 상태를 통합 관리하는 하나의 useEffect로 수정
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => setUser(currentUser));
+    // 1. 구글 로그인 후 돌아왔을 때 결과 처리
+    getRedirectResult(auth)
+      .then((result) => {
+        if (result?.user) {
+          console.log("리디렉트 로그인 성공!", result.user);
+          setUser(result.user);
+        }
+      })
+      .catch((error) => {
+        console.error("리디렉트 처리 중 에러 발생:", error);
+      });
+
+    // 2. 평상시 로그인 상태 감지 및 로딩 해제
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+      setLoading(false); // 상태 감지가 완료되면 로딩 화면을 꺼줌
+    });
+
     return () => unsubscribe();
   }, []);
 
+  // 유저 DB 데이터 가져오기
   useEffect(() => {
     const fetchUserData = async () => {
       if (!user) return; 
       try {
         const docSnap = await getDoc(doc(db, "users", user.uid));
         if (docSnap.exists()) setPlayerData(docSnap.data());
-      } catch (error) {}
+      } catch (error) {
+        console.error("데이터 불러오기 에러:", error);
+      }
     };
     fetchUserData();
   }, [user]);
 
+  // 레이팅 계산 (중첩 오류 수정됨)
   useEffect(() => {
     if (!playerData) return;
     let totalSum = 0;
     let validSongCount = 0;
+    
     const processSongs = (songs: any[]) => {
       if(!songs) return;
       songs.forEach((song) => {
@@ -97,29 +121,6 @@ export default function Home() {
         }
       });
     };
-
-  useEffect(() => {
-    // ⭐️ 추가 1: 구글 로그인 후 사이트로 리디렉트 되어 돌아왔을 때 결과를 처리
-    getRedirectResult(auth)
-      .then((result) => {
-        if (result && result.user) {
-          console.log("리디렉트 로그인 성공!", result.user);
-          setUser(result.user);
-        }
-      })
-      .catch((error) => {
-        console.error("리디렉트 처리 중 에러 발생:", error);
-      });
-
-    // ⭐️ 추가 2: 평상시 로그인 상태 유지 안테나 (기존에 추가하신 부분)
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      if (currentUser) {
-        setUser(currentUser);
-      }
-    });
-
-    return () => unsubscribe();
-  }, []);
 
     processSongs(playerData.best);
     processSongs(playerData.new);
@@ -162,7 +163,13 @@ export default function Home() {
       </nav>
 
       <main className="w-full max-w-6xl mx-auto px-4 pb-12">
-        {!user ? (
+        {loading ? (
+          // ⭐️ 로딩 중 화면
+          <div className="flex flex-col items-center justify-center h-[60vh]">
+            <p className="text-zinc-500 font-bold animate-pulse">로그인 상태를 확인하고 있습니다...</p>
+          </div>
+        ) : !user ? (
+          // 로그인 안 된 화면
           <div className="flex flex-col items-center justify-center h-[60vh]">
             <p className="mb-4 text-zinc-500">기록을 연동하려면 로그인하세요.</p>
             <button onClick={() => signInWithRedirect(auth, new GoogleAuthProvider())} className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg shadow-md transition">
@@ -170,6 +177,7 @@ export default function Home() {
             </button>
           </div>
         ) : (
+          // 로그인 성공 시 대시보드 화면
           <div className="flex flex-col gap-8">
             
             {/* 프로필 요약 카드 */}
@@ -177,7 +185,6 @@ export default function Home() {
               
               {/* 왼쪽: 아바타 및 유저 정보 */}
               <div className="flex items-center gap-5">
-                {/* 🌟 1. 캐릭터(아바타) 렌더링 부분 */}
                 <div className="w-24 h-24 shrink-0 bg-zinc-100 dark:bg-zinc-800 rounded-xl flex justify-center items-center border border-zinc-200 dark:border-zinc-700 shadow-inner overflow-hidden relative">
                   {playerData?.characterImage ? (
                     <img src={playerData.characterImage} alt="Avatar" className="w-full h-full object-cover scale-110" />
