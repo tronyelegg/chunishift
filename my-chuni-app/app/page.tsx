@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import { GoogleAuthProvider, signInWithRedirect, getRedirectResult, User, onAuthStateChanged } from 'firebase/auth';
+import { GoogleAuthProvider, signInWithPopup, User, onAuthStateChanged } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 
 // ⚠️ 본인의 구조에 맞게 경로 확인
@@ -53,7 +53,7 @@ export default function Home() {
   const [playerData, setPlayerData] = useState<any>(null);
   const [calculatedTotalRating, setCalculatedTotalRating] = useState<number>(0);
   const [isDarkMode, setIsDarkMode] = useState<boolean>(false);
-  const [loading, setLoading] = useState<boolean>(true); // ⭐️ 로딩 상태 추가
+  const [loading, setLoading] = useState<boolean>(true); // 로딩 상태 유지
 
   // 다크모드 초기 세팅
   useEffect(() => {
@@ -68,26 +68,12 @@ export default function Home() {
     setIsDarkMode(!isDarkMode);
   };
 
-  // ⭐️ 인증(로그인) 상태를 통합 관리하는 하나의 useEffect로 수정
+  // ⭐️ 인증 상태 감지 (팝업 방식이므로 리디렉트 처리 제거)
   useEffect(() => {
-    // 1. 구글 로그인 후 돌아왔을 때 결과 처리
-    getRedirectResult(auth)
-      .then((result) => {
-        if (result?.user) {
-          console.log("리디렉트 로그인 성공!", result.user);
-          setUser(result.user);
-        }
-      })
-      .catch((error) => {
-        console.error("리디렉트 처리 중 에러 발생:", error);
-      });
-
-    // 2. 평상시 로그인 상태 감지 및 로딩 해제
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
-      setLoading(false); // 상태 감지가 완료되면 로딩 화면을 꺼줌
+      setLoading(false); 
     });
-
     return () => unsubscribe();
   }, []);
 
@@ -105,7 +91,7 @@ export default function Home() {
     fetchUserData();
   }, [user]);
 
-  // 레이팅 계산 (중첩 오류 수정됨)
+  // 레이팅 계산
   useEffect(() => {
     if (!playerData) return;
     let totalSum = 0;
@@ -148,6 +134,27 @@ export default function Home() {
     return () => window.removeEventListener("message", receiveMessage);
   }, [user]);
 
+  // ⭐️ 팝업 로그인 핸들러 (에러 처리 및 안내 강화)
+  const handleLogin = async () => {
+    setLoading(true);
+    try {
+      const provider = new GoogleAuthProvider();
+      provider.setCustomParameters({ prompt: 'select_account' }); // 무조건 계정 선택창 띄우기
+      await signInWithPopup(auth, provider);
+    } catch (error: any) {
+      console.error("로그인 에러:", error);
+      setLoading(false);
+      // 팝업이 차단되었을 때의 명확한 안내
+      if (error.code === 'auth/popup-blocked') {
+        alert("🚨 브라우저의 팝업 차단 기능이 켜져 있습니다.\n\n주소창 오른쪽 끝에 있는 [팝업 차단됨(X)] 아이콘을 클릭하여 '항상 허용'으로 변경한 뒤 다시 시도해 주세요.");
+      } else if (error.code === 'auth/unauthorized-domain') {
+        alert("🚨 파이어베이스 설정 오류입니다.\nFirebase Console > Authentication > Settings > Authorized domains에 현재 도메인을 추가해 주세요.");
+      } else if (error.code !== 'auth/cancelled-popup-request' && error.code !== 'auth/popup-closed-by-user') {
+        alert(`로그인 중 문제가 발생했습니다: ${error.message}`);
+      }
+    }
+  };
+
   return (
     <div className="min-h-screen bg-zinc-100 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 font-sans transition-colors duration-300">
       
@@ -164,7 +171,6 @@ export default function Home() {
 
       <main className="w-full max-w-6xl mx-auto px-4 pb-12">
         {loading ? (
-          // ⭐️ 로딩 중 화면
           <div className="flex flex-col items-center justify-center h-[60vh]">
             <p className="text-zinc-500 font-bold animate-pulse">로그인 상태를 확인하고 있습니다...</p>
           </div>
@@ -172,7 +178,7 @@ export default function Home() {
           // 로그인 안 된 화면
           <div className="flex flex-col items-center justify-center h-[60vh]">
             <p className="mb-4 text-zinc-500">기록을 연동하려면 로그인하세요.</p>
-            <button onClick={() => signInWithRedirect(auth, new GoogleAuthProvider())} className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg shadow-md transition">
+            <button onClick={handleLogin} className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg shadow-md transition">
               Google로 시작하기
             </button>
           </div>
