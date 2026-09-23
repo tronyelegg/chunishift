@@ -177,7 +177,7 @@ export default function ExportPage() {
                   </div>
                 </div>
 
-                {/* BEST 30 */}
+                {/* BEST 30 */}cd
                 <div className="mb-10">
                   <h3 className="text-xl font-black mb-4 flex items-center gap-2 text-zinc-900 dark:text-white">
                     <span className="w-2 h-6 bg-amber-500 rounded-full"></span> BEST 30

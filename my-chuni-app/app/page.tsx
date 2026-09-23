@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import { GoogleAuthProvider, signInWithPopup, User, onAuthStateChanged } from 'firebase/auth';
+import { GoogleAuthProvider, signInWithRedirect, User, onAuthStateChanged } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 
 // ⚠️ 본인의 구조에 맞게 경로 확인
@@ -141,7 +141,7 @@ export default function Home() {
         {!user ? (
           <div className="flex flex-col items-center justify-center h-[60vh]">
             <p className="mb-4 text-zinc-500">기록을 연동하려면 로그인하세요.</p>
-            <button onClick={() => signInWithPopup(auth, new GoogleAuthProvider())} className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg shadow-md transition">
+            <button onClick={() => signInWithRedirect(auth, new GoogleAuthProvider())} className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg shadow-md transition">
               Google로 시작하기
             </button>
           </div>
