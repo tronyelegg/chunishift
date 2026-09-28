@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import { GoogleAuthProvider, signInWithPopup, User, onAuthStateChanged } from 'firebase/auth';
+// ⭐️ [수정 1] signInWithRedirect와 getRedirectResult를 다시 추가했습니다.
+import { GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, User, onAuthStateChanged } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 
 // ⚠️ 본인의 구조에 맞게 경로 확인
@@ -68,12 +69,26 @@ export default function Home() {
     setIsDarkMode(!isDarkMode);
   };
 
-  // ⭐️ 인증 상태 감지 (팝업 방식이므로 리디렉트 처리 제거)
+  // ⭐️ [수정 2] 인증 상태 감지 및 리디렉트 결과 처리 통합
   useEffect(() => {
+    // 팝업 차단으로 인해 리디렉트 로그인 창으로 넘어갔다가 돌아왔을 때 여기서 결과를 낚아챕니다.
+    getRedirectResult(auth)
+      .then((result) => {
+        if (result?.user) {
+          console.log("리디렉트 로그인 성공!", result.user);
+          setUser(result.user);
+        }
+      })
+      .catch((error) => {
+        console.error("리디렉트 로그인 결과 에러:", error);
+      });
+
+    // 기본 로그인 상태 감지기 (이게 끝나면 loading을 false로 바꿉니다)
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
       setLoading(false); 
     });
+    
     return () => unsubscribe();
   }, []);
 
@@ -134,23 +149,41 @@ export default function Home() {
     return () => window.removeEventListener("message", receiveMessage);
   }, [user]);
 
-// ⭐️ async 키워드를 제거하여 클릭 즉시(0.001초의 딜레이도 없이) 실행되도록 변경
+  // 하이브리드 로그인 핸들러 (팝업 차단 시 자동 리디렉트)
   const handleLogin = () => {
+    setLoading(true); 
+    
     const provider = new GoogleAuthProvider();
     provider.setCustomParameters({ prompt: 'select_account' });
-    
-    // await 없이 signInWithPopup을 바로 호출합니다.
-    signInWithPopup(auth, provider).catch((error: any) => {
-      console.error("로그인 에러:", error);
-      
-      if (error.code === 'auth/popup-blocked') {
-        alert("🚨 브라우저가 여전히 팝업을 차단하고 있습니다.\n크롬 '시크릿 모드'에서 한 번만 테스트해 주세요.");
-      } else if (error.code === 'auth/unauthorized-domain') {
-        alert("🚨 파이어베이스 설정 오류입니다.\nFirebase Console > Authentication > Settings > Authorized domains에 현재 주소를 추가해 주세요.");
-      } else if (error.code !== 'auth/cancelled-popup-request' && error.code !== 'auth/popup-closed-by-user') {
-        alert(`로그인 중 문제가 발생했습니다: ${error.message}`);
-      }
-    });
+
+    // 1차 시도: 팝업 방식
+    signInWithPopup(auth, provider)
+      .then((result) => {
+        console.log("팝업 로그인 성공!");
+      })
+      .catch((error) => {
+        console.error("팝업 로그인 에러:", error);
+        
+        // 2차 시도: 팝업이 차단(auth/popup-blocked)되었을 경우
+        if (error.code === 'auth/popup-blocked') {
+          console.log("팝업이 차단되어 리디렉션 방식으로 자동 전환합니다.");
+          
+          // 팝업 없이 현재 창을 구글 로그인 화면으로 바로 이동시킵니다.
+          signInWithRedirect(auth, provider).catch((redirectError) => {
+            console.error("리디렉트 로그인 에러:", redirectError);
+            setLoading(false);
+          });
+          
+        } else if (error.code === 'auth/unauthorized-domain') {
+          setLoading(false);
+          alert("🚨 파이어베이스 설정 오류입니다.\nFirebase Console > Authentication > Settings > Authorized domains에 현재 도메인을 추가해 주세요.");
+        } else if (error.code !== 'auth/cancelled-popup-request' && error.code !== 'auth/popup-closed-by-user') {
+          setLoading(false);
+          alert(`로그인 중 문제가 발생했습니다: ${error.message}`);
+        } else {
+          setLoading(false); 
+        }
+      });
   };
 
   return (
