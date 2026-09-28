@@ -134,31 +134,23 @@ export default function Home() {
     return () => window.removeEventListener("message", receiveMessage);
   }, [user]);
 
-// ⭐️ 팝업 로그인 핸들러 수정
-  const handleLogin = async () => {
-    // ❌ 주의: 여기서 setLoading(true)를 호출하면 버튼이 사라지면서 브라우저가 팝업을 차단해버립니다! (삭제)
-
-    try {
-      const provider = new GoogleAuthProvider();
-      provider.setCustomParameters({ prompt: 'select_account' });
-      
-      // 클릭 즉시 어떠한 방해도 없이 팝업부터 띄웁니다.
-      await signInWithPopup(auth, provider);
-      
-      // 팝업이 무사히 뜨고 로그인이 완료되면,
-      // 어차피 맨 위쪽의 onAuthStateChanged 안테나가 이를 감지하고 화면을 바꿔줍니다.
-
-    } catch (error: any) {
+// ⭐️ async 키워드를 제거하여 클릭 즉시(0.001초의 딜레이도 없이) 실행되도록 변경
+  const handleLogin = () => {
+    const provider = new GoogleAuthProvider();
+    provider.setCustomParameters({ prompt: 'select_account' });
+    
+    // await 없이 signInWithPopup을 바로 호출합니다.
+    signInWithPopup(auth, provider).catch((error: any) => {
       console.error("로그인 에러:", error);
       
       if (error.code === 'auth/popup-blocked') {
-        alert("🚨 브라우저의 팝업 차단 기능이 켜져 있습니다.\n\n주소창 오른쪽 끝에 있는 [팝업 차단됨(X)] 아이콘을 클릭하여 '항상 허용'으로 변경한 뒤 다시 시도해 주세요.");
+        alert("🚨 브라우저가 여전히 팝업을 차단하고 있습니다.\n크롬 '시크릿 모드'에서 한 번만 테스트해 주세요.");
       } else if (error.code === 'auth/unauthorized-domain') {
-        alert("🚨 파이어베이스 설정 오류입니다.\nFirebase Console > Authentication > Settings > Authorized domains에 현재 도메인을 추가해 주세요.");
+        alert("🚨 파이어베이스 설정 오류입니다.\nFirebase Console > Authentication > Settings > Authorized domains에 현재 주소를 추가해 주세요.");
       } else if (error.code !== 'auth/cancelled-popup-request' && error.code !== 'auth/popup-closed-by-user') {
         alert(`로그인 중 문제가 발생했습니다: ${error.message}`);
       }
-    }
+    });
   };
 
   return (
