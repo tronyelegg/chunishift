@@ -134,17 +134,23 @@ export default function Home() {
     return () => window.removeEventListener("message", receiveMessage);
   }, [user]);
 
-  // ⭐️ 팝업 로그인 핸들러 (에러 처리 및 안내 강화)
+// ⭐️ 팝업 로그인 핸들러 수정
   const handleLogin = async () => {
-    setLoading(true);
+    // ❌ 주의: 여기서 setLoading(true)를 호출하면 버튼이 사라지면서 브라우저가 팝업을 차단해버립니다! (삭제)
+
     try {
       const provider = new GoogleAuthProvider();
-      provider.setCustomParameters({ prompt: 'select_account' }); // 무조건 계정 선택창 띄우기
+      provider.setCustomParameters({ prompt: 'select_account' });
+      
+      // 클릭 즉시 어떠한 방해도 없이 팝업부터 띄웁니다.
       await signInWithPopup(auth, provider);
+      
+      // 팝업이 무사히 뜨고 로그인이 완료되면,
+      // 어차피 맨 위쪽의 onAuthStateChanged 안테나가 이를 감지하고 화면을 바꿔줍니다.
+
     } catch (error: any) {
       console.error("로그인 에러:", error);
-      setLoading(false);
-      // 팝업이 차단되었을 때의 명확한 안내
+      
       if (error.code === 'auth/popup-blocked') {
         alert("🚨 브라우저의 팝업 차단 기능이 켜져 있습니다.\n\n주소창 오른쪽 끝에 있는 [팝업 차단됨(X)] 아이콘을 클릭하여 '항상 허용'으로 변경한 뒤 다시 시도해 주세요.");
       } else if (error.code === 'auth/unauthorized-domain') {
