@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import { GoogleAuthProvider, signInWithPopup, User, onAuthStateChanged } from 'firebase/auth';
+// ⭐️ signInWithRedirect와 getRedirectResult로 다시 변경
+import { GoogleAuthProvider, signInWithRedirect, getRedirectResult, User, onAuthStateChanged } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 
 // ⚠️ 본인의 구조에 맞게 경로 확인
@@ -68,14 +69,32 @@ export default function Home() {
     setIsDarkMode(!isDarkMode);
   };
 
-  // ⭐️ 인증 상태 감지 (리디렉션 관련 코드 모두 삭제 후 깔끔하게 유지)
+  // ⭐️ 핵심 수정 부분: 리디렉트 결과를 완벽하게 대기(await)하는 인증 안테나
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
-      setLoading(false); 
-    });
-    
-    return () => unsubscribe();
+    let isMounted = true;
+
+    const initAuth = async () => {
+      try {
+        // 1. 구글 화면에서 로그인 후 사이트로 돌아왔을 때, 파이어베이스가 인증을 완료할 때까지 확실히 기다립니다.
+        await getRedirectResult(auth);
+      } catch (error) {
+        console.error("리디렉트 처리 에러:", error);
+      }
+
+      // 2. 인증 대기가 끝나면 비로소 로그인 상태를 감지하고 로딩을 끕니다.
+      onAuthStateChanged(auth, (currentUser) => {
+        if (isMounted) {
+          setUser(currentUser);
+          setLoading(false); 
+        }
+      });
+    };
+
+    initAuth();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   // 유저 DB 데이터 가져오기
@@ -135,30 +154,18 @@ export default function Home() {
     return () => window.removeEventListener("message", receiveMessage);
   }, [user]);
 
-  // ⭐️ 팝업 전용 로그인 핸들러 (setLoading 완벽 제거, 리디렉트 제거)
+  // ⭐️ 안전한 리디렉트 방식 로그인 핸들러
   const handleLogin = () => {
+    setLoading(true); // 창이 넘어가기 전 클릭 방지용 로딩 띄우기
     const provider = new GoogleAuthProvider();
     provider.setCustomParameters({ prompt: 'select_account' });
 
-    // 클릭 즉시 동기적으로 팝업 실행
-    signInWithPopup(auth, provider)
-      .then(() => {
-        console.log("팝업 로그인 성공!");
-      })
-      .catch((error) => {
-        console.error("팝업 로그인 에러:", error);
-        
-        if (error.code === 'auth/popup-blocked') {
-          alert("🚨 팝업이 차단되었습니다!\n\n주소창 오른쪽 끝에 있는 [팝업 차단됨(X)] 아이콘을 클릭하여 '항상 허용'으로 변경해 주세요.");
-        } else if (error.code === 'auth/unauthorized-domain') {
-          alert("🚨 파이어베이스 설정 오류입니다.\nFirebase Console > Authentication > Settings > Authorized domains에 현재 도메인을 추가해 주세요.");
-        } else if (error.code !== 'auth/cancelled-popup-request' && error.code !== 'auth/popup-closed-by-user') {
-          alert(`로그인 중 문제가 발생했습니다: ${error.message}`);
-        }
-      });
+    signInWithRedirect(auth, provider).catch((error) => {
+      console.error("리디렉트 로그인 시작 에러:", error);
+      setLoading(false);
+    });
   };
 
-  
   return (
     <div className="min-h-screen bg-zinc-100 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 font-sans transition-colors duration-300">
       
