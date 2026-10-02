@@ -1,8 +1,14 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-// ⭐️ 리디렉트 관련 기능 모두 삭제, 순수하게 Popup과 상태 감지만 남김
-import { GoogleAuthProvider, signInWithPopup, User, onAuthStateChanged } from 'firebase/auth';
+import { 
+  GoogleAuthProvider, 
+  signInWithPopup, 
+  signInWithRedirect, 
+  getRedirectResult, 
+  User, 
+  onAuthStateChanged 
+} from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 
 // ⚠️ 본인의 구조에 맞게 경로 확인
@@ -54,7 +60,7 @@ export default function Home() {
   const [playerData, setPlayerData] = useState<any>(null);
   const [calculatedTotalRating, setCalculatedTotalRating] = useState<number>(0);
   const [isDarkMode, setIsDarkMode] = useState<boolean>(false);
-  const [loading, setLoading] = useState<boolean>(true); // 초기 로딩 상태
+  const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
     if (document.documentElement.classList.contains('dark') || window.matchMedia('(prefers-color-scheme: dark)').matches) {
@@ -68,11 +74,23 @@ export default function Home() {
     setIsDarkMode(!isDarkMode);
   };
 
-  // ⭐️ 1. 앱이 켜질 때 로그인 상태만 딱 감지하는 안테나
+  // ⭐️ 1. 앱이 켜질 때 리다이렉트 결과 감지 및 로그인 상태 확인
   useEffect(() => {
+    const checkRedirect = async () => {
+      try {
+        const result = await getRedirectResult(auth);
+        if (result?.user) {
+          setUser(result.user);
+        }
+      } catch (error) {
+        console.error("리다이렉트 로그인 에러:", error);
+      }
+    };
+    checkRedirect();
+
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
-      setLoading(false); // 유저 확인이 끝나면 로딩 창 끄기
+      setLoading(false);
     });
     return () => unsubscribe();
   }, []);
@@ -123,6 +141,7 @@ export default function Home() {
       } catch (e) {}
     };
     window.addEventListener("message", receiveMessage);
+    
     if (window.opener) {
       window.opener.postMessage("ready", "*");
       setTimeout(() => { window.opener.postMessage("ready", "*"); }, 300);
@@ -131,17 +150,20 @@ export default function Home() {
     return () => window.removeEventListener("message", receiveMessage);
   }, [user]);
 
-  // ⭐️ 2. 순도 100% 동기식 팝업 호출 함수 (버튼 누르면 0.1초의 딜레이도 없이 즉시 팝업)
-  const handleLogin = () => {
+  // ⭐️ 2. 팝업 호출 후 차단 시 리다이렉트 자동 전환
+  const handleLogin = async () => {
     const provider = new GoogleAuthProvider();
     provider.setCustomParameters({ prompt: 'select_account' });
 
-    signInWithPopup(auth, provider).catch((error) => {
+    try {
+      await signInWithPopup(auth, provider);
+    } catch (error: any) {
       console.error("로그인 에러:", error);
       if (error.code === 'auth/popup-blocked') {
-        alert("🚨 브라우저 팝업이 차단되었습니다! 주소창 우측에서 팝업을 허용해주세요.");
+        alert("🚨 브라우저 환경으로 인해 팝업이 차단되었습니다.\n화면 이동(리다이렉트) 방식으로 로그인을 재시도합니다.");
+        signInWithRedirect(auth, provider);
       }
-    });
+    }
   };
 
   return (
@@ -170,7 +192,6 @@ export default function Home() {
           </div>
         ) : (
           <div className="flex flex-col gap-8">
-            {/* 프로필 요약 카드 */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center bg-white dark:bg-zinc-900 p-6 rounded-2xl shadow-sm border border-zinc-200 dark:border-zinc-800 gap-6">
               
               <div className="flex items-center gap-5">
