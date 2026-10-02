@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-// ⭐️ signInWithRedirect와 getRedirectResult로 다시 변경
-import { GoogleAuthProvider, signInWithRedirect, getRedirectResult, User, onAuthStateChanged } from 'firebase/auth';
+// ⭐️ 리디렉트 관련 기능 모두 삭제, 순수하게 Popup과 상태 감지만 남김
+import { GoogleAuthProvider, signInWithPopup, User, onAuthStateChanged } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 
 // ⚠️ 본인의 구조에 맞게 경로 확인
@@ -54,9 +54,8 @@ export default function Home() {
   const [playerData, setPlayerData] = useState<any>(null);
   const [calculatedTotalRating, setCalculatedTotalRating] = useState<number>(0);
   const [isDarkMode, setIsDarkMode] = useState<boolean>(false);
-  const [loading, setLoading] = useState<boolean>(true); 
+  const [loading, setLoading] = useState<boolean>(true); // 초기 로딩 상태
 
-  // 다크모드 초기 세팅
   useEffect(() => {
     if (document.documentElement.classList.contains('dark') || window.matchMedia('(prefers-color-scheme: dark)').matches) {
       setIsDarkMode(true);
@@ -69,35 +68,15 @@ export default function Home() {
     setIsDarkMode(!isDarkMode);
   };
 
-  // ⭐️ 핵심 수정 부분: 리디렉트 결과를 완벽하게 대기(await)하는 인증 안테나
+  // ⭐️ 1. 앱이 켜질 때 로그인 상태만 딱 감지하는 안테나
   useEffect(() => {
-    let isMounted = true;
-
-    const initAuth = async () => {
-      try {
-        // 1. 구글 화면에서 로그인 후 사이트로 돌아왔을 때, 파이어베이스가 인증을 완료할 때까지 확실히 기다립니다.
-        await getRedirectResult(auth);
-      } catch (error) {
-        console.error("리디렉트 처리 에러:", error);
-      }
-
-      // 2. 인증 대기가 끝나면 비로소 로그인 상태를 감지하고 로딩을 끕니다.
-      onAuthStateChanged(auth, (currentUser) => {
-        if (isMounted) {
-          setUser(currentUser);
-          setLoading(false); 
-        }
-      });
-    };
-
-    initAuth();
-
-    return () => {
-      isMounted = false;
-    };
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+      setLoading(false); // 유저 확인이 끝나면 로딩 창 끄기
+    });
+    return () => unsubscribe();
   }, []);
 
-  // 유저 DB 데이터 가져오기
   useEffect(() => {
     const fetchUserData = async () => {
       if (!user) return; 
@@ -105,13 +84,12 @@ export default function Home() {
         const docSnap = await getDoc(doc(db, "users", user.uid));
         if (docSnap.exists()) setPlayerData(docSnap.data());
       } catch (error) {
-        console.error("데이터 불러오기 에러:", error);
+        console.error("데이터 에러:", error);
       }
     };
     fetchUserData();
   }, [user]);
 
-  // 레이팅 계산
   useEffect(() => {
     if (!playerData) return;
     let totalSum = 0;
@@ -133,7 +111,6 @@ export default function Home() {
     if (validSongCount > 0) setCalculatedTotalRating(Math.floor((totalSum / validSongCount) * 100) / 100);
   }, [playerData]);
 
-  // 북마크릿 자동 저장 로직
   useEffect(() => {
     const receiveMessage = async (event: MessageEvent) => {
       if (!event.origin.includes("chunithm-net")) return;
@@ -154,22 +131,21 @@ export default function Home() {
     return () => window.removeEventListener("message", receiveMessage);
   }, [user]);
 
-  // ⭐️ 안전한 리디렉트 방식 로그인 핸들러
+  // ⭐️ 2. 순도 100% 동기식 팝업 호출 함수 (버튼 누르면 0.1초의 딜레이도 없이 즉시 팝업)
   const handleLogin = () => {
-    setLoading(true); // 창이 넘어가기 전 클릭 방지용 로딩 띄우기
     const provider = new GoogleAuthProvider();
     provider.setCustomParameters({ prompt: 'select_account' });
 
-    signInWithRedirect(auth, provider).catch((error) => {
-      console.error("리디렉트 로그인 시작 에러:", error);
-      setLoading(false);
+    signInWithPopup(auth, provider).catch((error) => {
+      console.error("로그인 에러:", error);
+      if (error.code === 'auth/popup-blocked') {
+        alert("🚨 브라우저 팝업이 차단되었습니다! 주소창 우측에서 팝업을 허용해주세요.");
+      }
     });
   };
 
   return (
     <div className="min-h-screen bg-zinc-100 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 font-sans transition-colors duration-300">
-      
-      {/* 상단 네비게이션 & 다크모드 버튼 */}
       <nav className="w-full max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
         <h1 className="text-xl font-black tracking-tight">CHUNITHM SHIFT</h1>
         <div className="flex gap-4 items-center">
@@ -186,7 +162,6 @@ export default function Home() {
             <p className="text-zinc-500 font-bold animate-pulse">로그인 상태를 확인하고 있습니다...</p>
           </div>
         ) : !user ? (
-          // 로그인 안 된 화면
           <div className="flex flex-col items-center justify-center h-[60vh]">
             <p className="mb-4 text-zinc-500">기록을 연동하려면 로그인하세요.</p>
             <button onClick={handleLogin} className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg shadow-md transition">
@@ -194,13 +169,10 @@ export default function Home() {
             </button>
           </div>
         ) : (
-          // 로그인 성공 시 대시보드 화면
           <div className="flex flex-col gap-8">
-            
             {/* 프로필 요약 카드 */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center bg-white dark:bg-zinc-900 p-6 rounded-2xl shadow-sm border border-zinc-200 dark:border-zinc-800 gap-6">
               
-              {/* 왼쪽: 아바타 및 유저 정보 */}
               <div className="flex items-center gap-5">
                 <div className="w-24 h-24 shrink-0 bg-zinc-100 dark:bg-zinc-800 rounded-xl flex justify-center items-center border border-zinc-200 dark:border-zinc-700 shadow-inner overflow-hidden relative">
                   {playerData?.characterImage ? (
@@ -211,7 +183,6 @@ export default function Home() {
                 </div>
                 
                 <div className="flex flex-col">
-                  {/* 🏆 칭호 */}
                   <div className="flex flex-col gap-1 mb-2">
                     {playerData?.honor && (
                       <div className="text-[11px] font-bold text-zinc-600 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700 w-fit px-2 py-0.5 rounded-sm bg-zinc-50 dark:bg-zinc-800/50 shadow-sm">
@@ -225,7 +196,6 @@ export default function Home() {
                     )}
                   </div>
                   
-                  {/* 📛 닉네임 & 클래스 */}
                   <div className="flex items-center gap-3 mb-3">
                     <h2 className="text-3xl font-black tracking-widest text-zinc-900 dark:text-white leading-none">
                       {playerData?.name || "PLAYER"}
@@ -235,7 +205,6 @@ export default function Home() {
                     )}
                   </div>
                   
-                  {/* 📊 하단 추가 정보 */}
                   <div className="flex items-center gap-6">
                     <div className="flex flex-col">
                       <span className="text-[9px] font-bold text-zinc-400 tracking-wider">LEVEL</span>
@@ -259,7 +228,6 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* 오른쪽: 레이팅 스코어보드 */}
               <div className="flex items-center gap-6 bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-100 dark:border-zinc-800 px-7 py-5 rounded-2xl shadow-sm">
                 <div className="text-center">
                   <div className="text-[10px] font-black text-zinc-400 tracking-widest mb-1">MAX RATING</div>
@@ -277,14 +245,12 @@ export default function Home() {
               </div>
             </div>
 
-            {/* 데이터가 없을 때 */}
             {!playerData && (
               <div className="text-center py-20 text-zinc-500">
                 저장된 기록이 없습니다.<br/>츄니즘 넷에서 북마크릿을 실행해 주세요.
               </div>
             )}
 
-            {/* NEW & BEST 리스트 */}
             {playerData && (
               <>
                 <section>
@@ -320,7 +286,6 @@ export default function Home() {
                 </section>
               </>
             )}
-            
           </div>
         )}
       </main>
