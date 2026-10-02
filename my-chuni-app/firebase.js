@@ -6,7 +6,7 @@ import { getFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDJoT0WeAmw-12ONOe0KRTzR1UatJtWC0w",
-  authDomain: "chunishift.firebaseapp.com",
+  authDomain: "chunishift.vercel.app",
   projectId: "chunishift",
   storageBucket: "chunishift.firebasestorage.app",
   messagingSenderId: "558872664217",
