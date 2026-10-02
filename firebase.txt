@@ -10,7 +10,7 @@ import { initializeApp } from "firebase/app";
 // Your web app's Firebase configuration
 const firebaseConfig = {
   apiKey: "AIzaSyDJoT0WeAmw-12ONOe0KRTzR1UatJtWC0w",
-  authDomain: "chunishift.firebaseapp.com",
+  authDomain: "chunishift.vercel.app", // ⭐️ 메인 웹사이트 주소로 변경
   projectId: "chunishift",
   storageBucket: "chunishift.firebasestorage.app",
   messagingSenderId: "558872664217",
