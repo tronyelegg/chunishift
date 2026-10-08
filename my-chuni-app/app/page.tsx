@@ -1,17 +1,16 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-// ⭐️ signInWithPopup 삭제, 리다이렉션 관련 메서드만 남김
 import { 
   GoogleAuthProvider, 
   signInWithRedirect, 
   getRedirectResult, 
   User, 
-  onAuthStateChanged 
+  onAuthStateChanged,
+  signOut // ⭐️ 로그아웃 함수 추가
 } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 
-// ⚠️ 본인의 구조에 맞게 경로 확인
 import { auth, db } from '../firebase'; 
 import chunirecDB from '../data/chunimaru_db.json';
 import SongCard from '../components/SongCard';
@@ -75,7 +74,6 @@ export default function Home() {
   };
 
   useEffect(() => {
-    // 앱 진입 시 리다이렉트 결과를 가장 먼저 확인
     const checkRedirect = async () => {
       try {
         const result = await getRedirectResult(auth);
@@ -88,7 +86,6 @@ export default function Home() {
     };
     checkRedirect();
 
-    // 일반적인 로그인 상태 감지
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
       setLoading(false);
@@ -151,7 +148,6 @@ export default function Home() {
     return () => window.removeEventListener("message", receiveMessage);
   }, [user]);
 
-  // ⭐️ 팝업 시도 로직 삭제, 깔끔하게 리다이렉션만 실행
   const handleLogin = async () => {
     const provider = new GoogleAuthProvider();
     provider.setCustomParameters({ prompt: 'select_account' });
@@ -163,12 +159,34 @@ export default function Home() {
     }
   };
 
+  // ⭐️ 로그아웃 처리 함수 추가
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      setPlayerData(null); // 로그아웃 시 화면의 데이터도 초기화
+      alert("로그아웃 되었습니다.");
+    } catch (error) {
+      console.error("로그아웃 에러:", error);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-zinc-100 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 font-sans transition-colors duration-300">
       <nav className="w-full max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
         <h1 className="text-xl font-black tracking-tight">CHUNITHM SHIFT</h1>
         <div className="flex gap-4 items-center">
           <a href="/export" className="text-sm font-bold hover:text-blue-500 transition">📸 사진관</a>
+          
+          {/* ⭐️ 로그인 상태일 때만 로그아웃 버튼 표시 */}
+          {user && (
+            <button 
+              onClick={handleLogout} 
+              className="text-sm font-bold text-red-500 hover:text-red-600 transition"
+            >
+              로그아웃
+            </button>
+          )}
+
           <button onClick={toggleDarkMode} className="px-3 py-1.5 text-sm font-semibold rounded-full bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700 transition">
             {isDarkMode ? "☀️ Light" : "🌙 Dark"}
           </button>
@@ -189,6 +207,7 @@ export default function Home() {
           </div>
         ) : (
           <div className="flex flex-col gap-8">
+            {/* 프로필 카드 등 기존 렌더링 코드 유지 */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center bg-white dark:bg-zinc-900 p-6 rounded-2xl shadow-sm border border-zinc-200 dark:border-zinc-800 gap-6">
               
               <div className="flex items-center gap-5">

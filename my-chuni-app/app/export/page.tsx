@@ -43,6 +43,16 @@ function calculateTrackRating(constant: number, score: number) {
   return Math.max(0, base + bonus) / 100;
 }
 
+// ⭐️ [추가] 외부 이미지를 Vercel 서버로 우회시켜 CORS 차단을 막는 프록시 함수
+const getProxyUrl = (url: string) => {
+  if (!url) return '';
+  if (url.startsWith('http')) {
+    // Next.js의 기본 이미지 최적화 API를 활용하여 동일 도메인(Same-Origin)으로 세탁합니다.
+    return `/_next/image?url=${encodeURIComponent(url)}&w=640&q=75`;
+  }
+  return url;
+};
+
 export default function ExportPage() {
   const [playerData, setPlayerData] = useState<any>(null);
   const [showRating, setShowRating] = useState(true);
@@ -78,7 +88,6 @@ export default function ExportPage() {
     try {
       const bgColor = isDarkMode ? "#09090b" : "#f4f4f5";
       
-      // 💡 [수정] 캡처 잘림 방지를 위해 가로축 옵션(windowWidth) 강제 고정
       const canvas = await html2canvas(printRef.current, { 
         scale: 2, 
         useCORS: true, 
@@ -93,7 +102,8 @@ export default function ExportPage() {
       link.download = `chunithm_rating_${new Date().getTime()}.png`;
       link.click();
     } catch (error) {
-      alert("이미지를 생성하는 데 실패했습니다.");
+      console.error("캡처 에러:", error);
+      alert("이미지를 생성하는 데 실패했습니다. SongCard 컴포넌트 내부의 이미지도 프록시 처리가 필요할 수 있습니다.");
     }
   };
 
@@ -106,7 +116,6 @@ export default function ExportPage() {
 
       <div className="max-w-7xl mx-auto p-4 md:p-8 flex flex-col md:flex-row gap-8 items-start">
         
-        {/* 좌측: 설정 패널 */}
         <div className="w-full md:w-72 bg-white dark:bg-zinc-900 p-6 rounded-2xl shadow-sm border border-zinc-200 dark:border-zinc-800 shrink-0 sticky top-8 z-10">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-xl font-bold dark:text-white">사진관 설정</h2>
@@ -134,22 +143,19 @@ export default function ExportPage() {
           </button>
         </div>
 
-        {/* 우측: 캡처 프리뷰 영역 */}
         {!playerData ? (
           <div className="flex-1 p-10 text-center text-zinc-500">데이터를 불러오는 중입니다...</div>
         ) : (
           <div className="flex-1 overflow-x-auto pb-4">
-            {/* 💡 [수정] w-fit을 추가하여 가로 스크롤 부모 안에서도 자식 크기가 1100px로 완벽히 펴지도록 강제 */}
             <div className="w-fit">
               <div ref={printRef} style={{ width: "1100px" }} className="shrink-0 bg-zinc-100 dark:bg-zinc-950 p-10 rounded-xl relative transition-colors duration-300">
                 
-                {/* 헤더 */}
                 <div className="flex justify-between items-center border-b border-zinc-300 dark:border-zinc-800 pb-6 mb-8">
                   <div className="flex items-center gap-6">
-                    {/* 캐릭터 아바타 (crossOrigin 속성 제거됨) */}
                     <div className="w-24 h-24 bg-white dark:bg-zinc-900 rounded-2xl border-2 border-zinc-200 dark:border-zinc-700 overflow-hidden shrink-0 flex justify-center items-center shadow-lg relative">
+                      {/* ⭐️ [수정] getProxyUrl 적용, crossOrigin="anonymous" 추가 */}
                       {playerData.characterImage ? (
-                        <img src={playerData.characterImage} alt="Character" className="w-full h-full object-cover scale-110" />
+                        <img src={getProxyUrl(playerData.characterImage)} crossOrigin="anonymous" alt="Character" className="w-full h-full object-cover scale-110" />
                       ) : (
                         <span className="text-4xl">👤</span>
                       )}
@@ -160,15 +166,14 @@ export default function ExportPage() {
                       {showName && (
                         <div className="flex items-center gap-3">
                           <p className="text-zinc-500 dark:text-zinc-400 text-lg">Player: <span className="font-bold text-zinc-900 dark:text-white">{playerData.name}</span></p>
-                          {/* 클래스 휘장 (crossOrigin 속성 제거됨) */}
-                          {playerData.classEmblem && <img src={playerData.classEmblem} alt="Class" className="h-6 object-contain drop-shadow-md" />}
+                          {/* ⭐️ [수정] getProxyUrl 적용, crossOrigin="anonymous" 추가 */}
+                          {playerData.classEmblem && <img src={getProxyUrl(playerData.classEmblem)} crossOrigin="anonymous" alt="Class" className="h-6 object-contain drop-shadow-md" />}
                         </div>
                       )}
                       {showPlayCount && <p className="text-zinc-500 text-sm mt-1">Lv. {playerData.level} / Play Count: {playerData.playCount || 0}</p>}
                     </div>
                   </div>
                   
-                  {/* 레이팅 */}
                   <div className="text-right bg-white dark:bg-zinc-900 px-6 py-3 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm">
                     <div className="text-sm font-bold text-amber-500 tracking-widest mb-1">MAX RATING</div>
                     <div className="text-5xl font-black text-zinc-900 dark:text-white">
@@ -177,7 +182,7 @@ export default function ExportPage() {
                   </div>
                 </div>
 
-                {/* BEST 30 */}cd
+                {/* ⭐️ [수정] 오타 cd 삭제됨 */}
                 <div className="mb-10">
                   <h3 className="text-xl font-black mb-4 flex items-center gap-2 text-zinc-900 dark:text-white">
                     <span className="w-2 h-6 bg-amber-500 rounded-full"></span> BEST 30
@@ -194,7 +199,6 @@ export default function ExportPage() {
                   </div>
                 </div>
 
-                {/* NEW FRAME */}
                 <div className="mb-6">
                   <h3 className="text-xl font-black mb-4 flex items-center gap-2 text-zinc-900 dark:text-white">
                     <span className="w-2 h-6 bg-blue-500 rounded-full"></span> NEW 20
