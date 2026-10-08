@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useState } from 'react';
+// ⭐️ signInWithPopup 삭제, 리다이렉션 관련 메서드만 남김
 import { 
   GoogleAuthProvider, 
-  signInWithPopup, 
   signInWithRedirect, 
   getRedirectResult, 
   User, 
@@ -74,8 +74,8 @@ export default function Home() {
     setIsDarkMode(!isDarkMode);
   };
 
-  // ⭐️ 1. 앱이 켜질 때 리다이렉트 결과 감지 및 로그인 상태 확인
   useEffect(() => {
+    // 앱 진입 시 리다이렉트 결과를 가장 먼저 확인
     const checkRedirect = async () => {
       try {
         const result = await getRedirectResult(auth);
@@ -88,6 +88,7 @@ export default function Home() {
     };
     checkRedirect();
 
+    // 일반적인 로그인 상태 감지
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
       setLoading(false);
@@ -150,19 +151,15 @@ export default function Home() {
     return () => window.removeEventListener("message", receiveMessage);
   }, [user]);
 
-  // ⭐️ 2. 팝업 호출 후 차단 시 리다이렉트 자동 전환
+  // ⭐️ 팝업 시도 로직 삭제, 깔끔하게 리다이렉션만 실행
   const handleLogin = async () => {
     const provider = new GoogleAuthProvider();
     provider.setCustomParameters({ prompt: 'select_account' });
 
     try {
-      await signInWithPopup(auth, provider);
-    } catch (error: any) {
-      console.error("로그인 에러:", error);
-      if (error.code === 'auth/popup-blocked') {
-        alert("🚨 브라우저 환경으로 인해 팝업이 차단되었습니다.\n화면 이동(리다이렉트) 방식으로 로그인을 재시도합니다.");
-        signInWithRedirect(auth, provider);
-      }
+      await signInWithRedirect(auth, provider);
+    } catch (error) {
+      console.error("로그인 시작 에러:", error);
     }
   };
 
