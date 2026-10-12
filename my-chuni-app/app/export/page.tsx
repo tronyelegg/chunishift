@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import html2canvas from "html2canvas";
+// ⭐️ [수정] html2canvas 대신 html-to-image 사용
+import { toPng } from 'html-to-image';
 import { onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
-import Link from "next/link"; // ⭐️ 새로고침 방지용 Link
+import Link from "next/link"; 
 
 // ⚠️ 본인의 경로에 맞게 확인
 import { auth, db } from "../../firebase";
@@ -44,7 +45,6 @@ function calculateTrackRating(constant: number, score: number) {
   return Math.max(0, base + bonus) / 100;
 }
 
-// ⭐️ [수정] 글로벌 이미지 프록시 적용 (CORS 완벽 우회 및 이미지 깨짐 방지)
 const getProxyUrl = (url: string) => {
   if (!url) return '';
   if (url.startsWith('http')) {
@@ -61,7 +61,6 @@ export default function ExportPage() {
   const [isDarkMode, setIsDarkMode] = useState<boolean>(false);
   const printRef = useRef<HTMLDivElement>(null);
 
-  // ⭐️ [수정] localStorage를 이용한 다크모드 고정 유지
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme');
     if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
@@ -95,27 +94,25 @@ export default function ExportPage() {
     return () => unsubscribe();
   }, []);
 
+  // ⭐️ [수정] html-to-image 구문으로 교체
   const handleDownload = async () => {
     if (!printRef.current) return;
     try {
       const bgColor = isDarkMode ? "#09090b" : "#f4f4f5";
       
-      const canvas = await html2canvas(printRef.current, { 
-        scale: 2, 
-        useCORS: true, 
+      // html-to-image의 toPng 함수 사용
+      const dataUrl = await toPng(printRef.current, {
         backgroundColor: bgColor,
-        scrollX: 0,
-        scrollY: 0,
-        windowWidth: 1200 
+        pixelRatio: 2, // 기존 scale: 2와 동일한 고화질 처리
       });
       
       const link = document.createElement("a");
-      link.href = canvas.toDataURL("image/png");
+      link.href = dataUrl;
       link.download = `chunithm_rating_${new Date().getTime()}.png`;
       link.click();
     } catch (error) {
       console.error("캡처 에러:", error);
-      alert("이미지를 생성하는 데 실패했습니다. SongCard 컴포넌트 내부의 이미지도 프록시 처리가 필요할 수 있습니다.");
+      alert("이미지를 생성하는 데 실패했습니다.");
     }
   };
 
@@ -123,7 +120,6 @@ export default function ExportPage() {
     <div className="min-h-screen bg-zinc-100 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 transition-colors duration-300">
       
       <nav className="w-full max-w-7xl mx-auto px-4 py-4 md:px-8 flex justify-between items-center">
-        {/* ⭐️ [수정] a 태그 대신 Link 컴포넌트 사용 */}
         <Link href="/" className="text-lg font-black hover:text-blue-500 transition">← 메인으로</Link>
       </nav>
 
