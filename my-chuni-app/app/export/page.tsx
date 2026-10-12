@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import html2canvas from "html2canvas";
 import { onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
+import Link from "next/link"; // ⭐️ 새로고침 방지용 Link
 
 // ⚠️ 본인의 경로에 맞게 확인
 import { auth, db } from "../../firebase";
@@ -43,12 +44,11 @@ function calculateTrackRating(constant: number, score: number) {
   return Math.max(0, base + bonus) / 100;
 }
 
-// ⭐️ [추가] 외부 이미지를 Vercel 서버로 우회시켜 CORS 차단을 막는 프록시 함수
+// ⭐️ [수정] 글로벌 이미지 프록시 적용 (CORS 완벽 우회 및 이미지 깨짐 방지)
 const getProxyUrl = (url: string) => {
   if (!url) return '';
   if (url.startsWith('http')) {
-    // Next.js의 기본 이미지 최적화 API를 활용하여 동일 도메인(Same-Origin)으로 세탁합니다.
-    return `/_next/image?url=${encodeURIComponent(url)}&w=640&q=75`;
+    return `https://wsrv.nl/?url=${encodeURIComponent(url)}&cors=1`;
   }
   return url;
 };
@@ -61,16 +61,28 @@ export default function ExportPage() {
   const [isDarkMode, setIsDarkMode] = useState<boolean>(false);
   const printRef = useRef<HTMLDivElement>(null);
 
+  // ⭐️ [수정] localStorage를 이용한 다크모드 고정 유지
   useEffect(() => {
-    if (document.documentElement.classList.contains('dark') || window.matchMedia('(prefers-color-scheme: dark)').matches) {
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
       setIsDarkMode(true);
       document.documentElement.classList.add('dark');
+    } else {
+      setIsDarkMode(false);
+      document.documentElement.classList.remove('dark');
     }
   }, []);
 
   const toggleDarkMode = () => {
-    document.documentElement.classList.toggle('dark');
-    setIsDarkMode(!isDarkMode);
+    if (isDarkMode) {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
+      setIsDarkMode(false);
+    } else {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
+      setIsDarkMode(true);
+    }
   };
 
   useEffect(() => {
@@ -111,7 +123,8 @@ export default function ExportPage() {
     <div className="min-h-screen bg-zinc-100 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 transition-colors duration-300">
       
       <nav className="w-full max-w-7xl mx-auto px-4 py-4 md:px-8 flex justify-between items-center">
-        <a href="/" className="text-lg font-black hover:text-blue-500 transition">← 메인으로</a>
+        {/* ⭐️ [수정] a 태그 대신 Link 컴포넌트 사용 */}
+        <Link href="/" className="text-lg font-black hover:text-blue-500 transition">← 메인으로</Link>
       </nav>
 
       <div className="max-w-7xl mx-auto p-4 md:p-8 flex flex-col md:flex-row gap-8 items-start">
@@ -153,7 +166,6 @@ export default function ExportPage() {
                 <div className="flex justify-between items-center border-b border-zinc-300 dark:border-zinc-800 pb-6 mb-8">
                   <div className="flex items-center gap-6">
                     <div className="w-24 h-24 bg-white dark:bg-zinc-900 rounded-2xl border-2 border-zinc-200 dark:border-zinc-700 overflow-hidden shrink-0 flex justify-center items-center shadow-lg relative">
-                      {/* ⭐️ [수정] getProxyUrl 적용, crossOrigin="anonymous" 추가 */}
                       {playerData.characterImage ? (
                         <img src={getProxyUrl(playerData.characterImage)} crossOrigin="anonymous" alt="Character" className="w-full h-full object-cover scale-110" />
                       ) : (
@@ -166,7 +178,6 @@ export default function ExportPage() {
                       {showName && (
                         <div className="flex items-center gap-3">
                           <p className="text-zinc-500 dark:text-zinc-400 text-lg">Player: <span className="font-bold text-zinc-900 dark:text-white">{playerData.name}</span></p>
-                          {/* ⭐️ [수정] getProxyUrl 적용, crossOrigin="anonymous" 추가 */}
                           {playerData.classEmblem && <img src={getProxyUrl(playerData.classEmblem)} crossOrigin="anonymous" alt="Class" className="h-6 object-contain drop-shadow-md" />}
                         </div>
                       )}
@@ -182,7 +193,6 @@ export default function ExportPage() {
                   </div>
                 </div>
 
-                {/* ⭐️ [수정] 오타 cd 삭제됨 */}
                 <div className="mb-10">
                   <h3 className="text-xl font-black mb-4 flex items-center gap-2 text-zinc-900 dark:text-white">
                     <span className="w-2 h-6 bg-amber-500 rounded-full"></span> BEST 30

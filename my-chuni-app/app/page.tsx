@@ -1,16 +1,18 @@
 "use client";
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { 
   GoogleAuthProvider, 
   signInWithRedirect, 
   getRedirectResult, 
   User, 
   onAuthStateChanged,
-  signOut // ⭐️ 로그아웃 함수 추가
+  signOut
 } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 
+// ⚠️ 본인의 구조에 맞게 경로 확인
 import { auth, db } from '../firebase'; 
 import chunirecDB from '../data/chunimaru_db.json';
 import SongCard from '../components/SongCard';
@@ -61,16 +63,28 @@ export default function Home() {
   const [isDarkMode, setIsDarkMode] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
 
+  // 로컬 저장소(localStorage)를 활용한 다크모드 고정
   useEffect(() => {
-    if (document.documentElement.classList.contains('dark') || window.matchMedia('(prefers-color-scheme: dark)').matches) {
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
       setIsDarkMode(true);
       document.documentElement.classList.add('dark');
+    } else {
+      setIsDarkMode(false);
+      document.documentElement.classList.remove('dark');
     }
   }, []);
 
   const toggleDarkMode = () => {
-    document.documentElement.classList.toggle('dark');
-    setIsDarkMode(!isDarkMode);
+    if (isDarkMode) {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
+      setIsDarkMode(false);
+    } else {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
+      setIsDarkMode(true);
+    }
   };
 
   useEffect(() => {
@@ -159,11 +173,10 @@ export default function Home() {
     }
   };
 
-  // ⭐️ 로그아웃 처리 함수 추가
   const handleLogout = async () => {
     try {
       await signOut(auth);
-      setPlayerData(null); // 로그아웃 시 화면의 데이터도 초기화
+      setPlayerData(null); 
       alert("로그아웃 되었습니다.");
     } catch (error) {
       console.error("로그아웃 에러:", error);
@@ -175,9 +188,11 @@ export default function Home() {
       <nav className="w-full max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
         <h1 className="text-xl font-black tracking-tight">CHUNITHM SHIFT</h1>
         <div className="flex gap-4 items-center">
-          <a href="/export" className="text-sm font-bold hover:text-blue-500 transition">📸 사진관</a>
           
-          {/* ⭐️ 로그인 상태일 때만 로그아웃 버튼 표시 */}
+          <Link href="/export" className="text-sm font-bold hover:text-blue-500 transition">
+            📸 사진관
+          </Link>
+          
           {user && (
             <button 
               onClick={handleLogout} 
@@ -207,7 +222,6 @@ export default function Home() {
           </div>
         ) : (
           <div className="flex flex-col gap-8">
-            {/* 프로필 카드 등 기존 렌더링 코드 유지 */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center bg-white dark:bg-zinc-900 p-6 rounded-2xl shadow-sm border border-zinc-200 dark:border-zinc-800 gap-6">
               
               <div className="flex items-center gap-5">
