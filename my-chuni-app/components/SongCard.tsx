@@ -7,6 +7,12 @@ interface SongCardProps {
   songId: string | null;
 }
 
+// ⭐️ [추가] 외부 이미지 CORS 차단 우회를 위한 프록시 헬퍼 함수
+const getProxyUrl = (url: string) => {
+  if (!url) return '';
+  return `https://wsrv.nl/?url=${encodeURIComponent(url)}&cors=1`;
+};
+
 export default function SongCard({ song, constant, trackRating, songId }: SongCardProps) {
   const [imgError, setImgError] = useState(false);
 
@@ -22,11 +28,12 @@ export default function SongCard({ song, constant, trackRating, songId }: SongCa
   return (
     <div className="relative overflow-hidden rounded-xl bg-white dark:bg-zinc-900 shadow-md border border-zinc-200 dark:border-zinc-800 flex flex-col justify-between h-28 transition-transform hover:scale-[1.03] duration-200 cursor-pointer">
       
-      {/* 🚀 수정된 부분: 츄니즘 공식 서버 주소와 .jpg 확장자 적용 */}
       <div className="absolute inset-0 z-0 opacity-40 dark:opacity-30">
         {songId && !imgError ? (
           <img 
-            src={`https://chunithm-net-eng.com/mobile/img/${songId}.jpg`} 
+            // 🚀 [수정] 원본 URL을 getProxyUrl로 감싸고 crossOrigin 속성 추가
+            src={getProxyUrl(`https://chunithm-net-eng.com/mobile/img/${songId}.jpg`)} 
+            crossOrigin="anonymous"
             alt="jacket" 
             className="w-full h-full object-cover filter blur-[2px]"
             onError={() => setImgError(true)}
