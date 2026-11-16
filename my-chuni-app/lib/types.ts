@@ -24,6 +24,8 @@ export interface PlayerData {
   honor?: string;
   subHonor?: string;
   updatedAt?: string;
+  termsAgreed?: boolean;
+  termsAgreedAt?: string;
   best?: ChartScore[];
   new?: ChartScore[];
   score?: ChartScore[];

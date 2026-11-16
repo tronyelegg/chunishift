@@ -161,6 +161,18 @@ export default function SongsPage() {
               대시보드
             </Link>
             <Link
+              href="/stats"
+              className="px-3 py-1.5 text-xs sm:text-sm font-bold text-zinc-700 dark:text-zinc-200 hover:text-sky-500 transition"
+            >
+              통계
+            </Link>
+            <Link
+              href="/level-distribution"
+              className="px-3 py-1.5 text-xs sm:text-sm font-bold text-zinc-700 dark:text-zinc-200 hover:text-sky-500 transition"
+            >
+              레벨별 분포
+            </Link>
+            <Link
               href="/export"
               className="px-3 py-1.5 text-xs sm:text-sm font-bold text-zinc-700 dark:text-zinc-200 hover:text-sky-500 transition"
             >

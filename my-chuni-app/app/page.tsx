@@ -23,6 +23,7 @@ import {
   getRatingTier,
 } from "../lib/rating";
 import type { PlayerData, ChartScore } from "../lib/types";
+import PrivacyPolicyModal from "../components/PrivacyPolicyModal";
 
 // 북마크릿 코드
 const BOOKMARKLET_CODE = `javascript:(function(){const s=document.createElement('script');s.src='https://chunishift.vercel.app/chunimain.js?t='+Date.now();document.body.appendChild(s);})();`;
@@ -35,6 +36,7 @@ export default function Home() {
   const [playerData, setPlayerData] = useState<PlayerData | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [showBookmarkletModal, setShowBookmarkletModal] = useState<boolean>(false);
+  const [showTermsModal, setShowTermsModal] = useState<boolean>(false);
   const [copied, setCopied] = useState<boolean>(false);
 
   // 탭 및 정렬 상태 (maishift 스타일 컨트롤)
@@ -71,7 +73,13 @@ export default function Home() {
       try {
         const docSnap = await getDoc(doc(db, "users", user.uid));
         if (docSnap.exists()) {
-          setPlayerData(docSnap.data() as PlayerData);
+          const data = docSnap.data() as PlayerData;
+          setPlayerData(data);
+          if (data.termsAgreed !== true) {
+            setShowTermsModal(true);
+          }
+        } else {
+          setShowTermsModal(true);
         }
       } catch (error) {
         console.error("데이터 로드 에러:", error);
@@ -246,7 +254,23 @@ export default function Home() {
               className="px-3 py-1.5 text-xs sm:text-sm font-bold text-zinc-700 dark:text-zinc-200 bg-zinc-100 dark:bg-zinc-800/80 hover:bg-zinc-200 dark:hover:bg-zinc-700 border border-zinc-200 dark:border-zinc-700 rounded-lg transition-colors flex items-center gap-1.5"
             >
               <span>🎵</span>
-              <span>상수표</span>
+              <span className="hidden sm:inline">상수표</span>
+            </Link>
+
+            <Link
+              href="/stats"
+              className="px-3 py-1.5 text-xs sm:text-sm font-bold text-zinc-700 dark:text-zinc-200 bg-zinc-100 dark:bg-zinc-800/80 hover:bg-zinc-200 dark:hover:bg-zinc-700 border border-zinc-200 dark:border-zinc-700 rounded-lg transition-colors flex items-center gap-1.5"
+            >
+              <span>📊</span>
+              <span className="hidden sm:inline">통계</span>
+            </Link>
+
+            <Link
+              href="/level-distribution"
+              className="px-3 py-1.5 text-xs sm:text-sm font-bold text-zinc-700 dark:text-zinc-200 bg-zinc-100 dark:bg-zinc-800/80 hover:bg-zinc-200 dark:hover:bg-zinc-700 border border-zinc-200 dark:border-zinc-700 rounded-lg transition-colors flex items-center gap-1.5"
+            >
+              <span>📈</span>
+              <span className="hidden sm:inline">분포</span>
             </Link>
 
             <Link
@@ -254,7 +278,7 @@ export default function Home() {
               className="px-3 py-1.5 text-xs sm:text-sm font-bold text-zinc-700 dark:text-zinc-200 bg-zinc-100 dark:bg-zinc-800/80 hover:bg-zinc-200 dark:hover:bg-zinc-700 border border-zinc-200 dark:border-zinc-700 rounded-lg transition-colors flex items-center gap-1.5"
             >
               <span>📸</span>
-              <span>사진관</span>
+              <span className="hidden sm:inline">사진관</span>
             </Link>
 
             <button
@@ -556,6 +580,17 @@ export default function Home() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* 최초 로그인/약관 미동의 시 개인정보 처리방침 동의 모달 */}
+      {user && showTermsModal && (
+        <PrivacyPolicyModal
+          userId={user.uid}
+          onAgreed={() => {
+            setShowTermsModal(false);
+            setPlayerData((prev) => (prev ? { ...prev, termsAgreed: true } : prev));
+          }}
+        />
       )}
     </div>
   );
