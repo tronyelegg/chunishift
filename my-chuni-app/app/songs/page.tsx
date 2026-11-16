@@ -4,7 +4,7 @@ import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { useDarkMode } from "../../hooks/useDarkMode";
 import { getProxyUrl } from "../../lib/proxy";
-import { matchSongSearch, SONG_ALIASES } from "../../lib/koreanSearch";
+import { matchSongSearch, SONG_ALIASES, ARTIST_ALIASES } from "../../lib/koreanSearch";
 import rawSongDB from "../../data/chunimaru_db.json";
 import type { SongItem, DiffKey } from "../../lib/types";
 
@@ -185,9 +185,9 @@ export default function SongsPage() {
             CHUNITHM 보면 상수표
           </h1>
           <p className="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400 mb-4">
-            CHUNITHM 전체 1,500여 곡의 난이도별 세부 상수(Internal Constant)를 검색하세요.
+            CHUNITHM 전체 1,500여 곡의 난이도별 세부 보면 상수(Internal Constant)를 검색하세요.
             <br className="hidden sm:inline" />
-            나무위키 한국어 번역명, 약칭 및 발음 음차(예: <strong>엔드마크, 천본앵, 프다, 샤를, 이카즈치</strong>)로도 검색 가능합니다.
+            나무위키 한국어 번역명 및 음차(예: <strong>포세이큰 테일, 말쿠트, 엔드마크, 천본앵</strong>)나 작곡가 한국명(예: <strong>토파조, 리프, 사쿠죠</strong>)으로도 편리하게 검색할 수 있습니다.
           </p>
 
           {/* 대형 검색창 */}
@@ -199,7 +199,7 @@ export default function SongsPage() {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="곡 제목, 아티스트, 한국어 번역명, 발음 음차로 검색..."
+              placeholder="곡명, 작곡가, 한글 번역명, 음차(예: 말쿠트, 포세이큰 테일, 토파조) 검색..."
               className="w-full pl-10 pr-10 py-3 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-800 focus:border-sky-500 dark:focus:border-sky-500 outline-none text-sm font-bold shadow-xs transition"
             />
             {searchQuery && (
@@ -478,6 +478,11 @@ export default function SongsPage() {
                 )}
                 <p className="text-xs text-zinc-500 dark:text-zinc-400 truncate mt-1">
                   {selectedSong.artist}
+                  {ARTIST_ALIASES[selectedSong.artist] && (
+                    <span className="text-zinc-400 font-bold ml-1.5">
+                      ({ARTIST_ALIASES[selectedSong.artist][0]})
+                    </span>
+                  )}
                 </p>
               </div>
             </div>
