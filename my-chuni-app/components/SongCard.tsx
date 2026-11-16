@@ -110,16 +110,14 @@ function SongCardComponent({
       {/* 우측: 곡 메타 정보 및 성과 */}
       <div className="flex-1 min-w-0 flex flex-col justify-between py-0.5 h-16 sm:h-18">
         {/* 상단 라인: 난이도/상수 & 단일 레이팅 */}
-        <div className="flex items-center justify-between gap-1">
-          <div className="flex items-center gap-1.5 truncate">
-            <span
-              className={`text-[10px] font-extrabold tracking-tight px-1.5 py-0.5 rounded ${style.bg} text-white shadow-xs`}
-            >
-              {diffShort} {constant ? constant.toFixed(1) : "?"}
-            </span>
-          </div>
+        <div className="flex items-center justify-between gap-1 w-full">
+          <span
+            className={`shrink-0 inline-flex items-center text-[10px] font-extrabold tracking-tight px-1.5 py-0.5 rounded-md ${style.bg} text-white shadow-xs`}
+          >
+            {diffShort} {constant ? constant.toFixed(1) : "?"}
+          </span>
 
-          <div className="flex items-baseline gap-0.5 shrink-0 bg-zinc-100 dark:bg-zinc-800/90 px-1.5 py-0.5 rounded border border-zinc-200 dark:border-zinc-700/60">
+          <div className="flex items-baseline gap-0.5 shrink-0 bg-zinc-100 dark:bg-zinc-800/90 px-1.5 py-0.5 rounded-md border border-zinc-200 dark:border-zinc-700/60">
             <span className="text-[9px] font-bold text-zinc-400 tracking-tighter">
               RT
             </span>
@@ -146,18 +144,18 @@ function SongCardComponent({
           <div className="flex items-center gap-1 shrink-0">
             {/* 랭크 뱃지 (SSS+, SSS, SS 등) */}
             <span
-              className={`text-[9px] font-black px-1.5 py-0.5 rounded shadow-xs tracking-tighter ${rankBadge}`}
+              className={`shrink-0 inline-flex items-center text-[9px] font-black px-1.5 py-0.5 rounded-md shadow-xs tracking-tighter ${rankBadge}`}
             >
               {rank}
             </span>
 
             {/* 판정 뱃지 (AJ / FC) */}
             {song.isAllJustice ? (
-              <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-linear-to-r from-amber-400 to-yellow-300 text-zinc-950 shadow-xs tracking-tighter">
+              <span className="shrink-0 inline-flex items-center text-[9px] font-black px-1.5 py-0.5 rounded-md bg-linear-to-r from-amber-400 to-yellow-300 text-zinc-950 shadow-xs tracking-tighter">
                 AJ
               </span>
             ) : song.isFullCombo ? (
-              <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-emerald-500 text-white shadow-xs tracking-tighter">
+              <span className="shrink-0 inline-flex items-center text-[9px] font-black px-1.5 py-0.5 rounded-md bg-emerald-500 text-white shadow-xs tracking-tighter">
                 FC
               </span>
             ) : null}
