@@ -1,114 +1,50 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-// ⭐️ [수정] html2canvas 대신 html-to-image 사용
-import { toPng } from 'html-to-image';
+import { toPng } from "html-to-image";
 import { onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
-import Link from "next/link"; 
+import Link from "next/link";
 
-// ⚠️ 본인의 경로에 맞게 확인
 import { auth, db } from "../../firebase";
-import chunirecDB from "../../data/chunimaru_db.json";
-import SongCard from "../../components/SongCard"; 
-
-const difficultyMap: Record<string, string> = { "Basic": "BAS", "Advanced": "ADV", "Expert": "EXP", "Master": "MAS", "Ultima": "ULT" };
-
-function getConstant(songData: any) {
-  const dbArray = Array.isArray(chunirecDB) ? chunirecDB : (chunirecDB as any).songs || [];
-  const song = dbArray.find((s: any) => (songData.idx && s.idx === songData.idx) || (s.title === songData.title));
-  if (!song) return null;
-  
-  const diffKey = difficultyMap[songData.difficulty];
-  const diffData = song.charts ? song.charts[diffKey] : null;
-
-  if (diffData) {
-    if (diffData.const > 0) return diffData.const;
-    else if (diffData.level > 0) return diffData.level;
-  }
-  return null;
-}
-
-function calculateTrackRating(constant: number, score: number) {
-  let base = Math.round(constant * 100);
-  let bonus = 0;
-  if (score >= 1009000) bonus = 215;
-  else if (score >= 1007500) bonus = 200 + Math.floor((score - 1007500) / 100);
-  else if (score >= 1005000) bonus = 150 + Math.floor((score - 1005000) / 50);
-  else if (score >= 1000000) bonus = 100 + Math.floor((score - 1000000) / 100);
-  else if (score >= 990000) bonus = 60 + Math.floor((score - 990000) / 250);
-  else if (score >= 975000) bonus = 0 + Math.floor((score - 975000) / 250);
-  else if (score >= 950000) bonus = -167 + Math.floor((score - 950000) / 150);
-  else if (score >= 925000) bonus = -334 + Math.floor((score - 925000) / 150);
-  else if (score >= 900000) bonus = -500 + Math.floor((score - 900000) / 150);
-  
-  return Math.max(0, base + bonus) / 100;
-}
-
-const getProxyUrl = (url: string) => {
-  if (!url) return '';
-  if (url.startsWith('http')) {
-    return `https://wsrv.nl/?url=${encodeURIComponent(url)}&cors=1`;
-  }
-  return url;
-};
+import SongCard from "../../components/SongCard";
+import { useDarkMode } from "../../hooks/useDarkMode";
+import { getConstant, calculateTrackRating, findSongMeta } from "../../lib/rating";
+import { getProxyUrl } from "../../lib/proxy";
+import type { PlayerData, ChartScore } from "../../lib/types";
 
 export default function ExportPage() {
-  const [playerData, setPlayerData] = useState<any>(null);
+  const [playerData, setPlayerData] = useState<PlayerData | null>(null);
   const [showRating, setShowRating] = useState(true);
   const [showName, setShowName] = useState(true);
   const [showPlayCount, setShowPlayCount] = useState(true);
-  const [isDarkMode, setIsDarkMode] = useState<boolean>(false);
+  const { isDarkMode, toggleDarkMode } = useDarkMode();
   const printRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const savedTheme = localStorage.getItem('theme');
-    if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-      setIsDarkMode(true);
-      document.documentElement.classList.add('dark');
-    } else {
-      setIsDarkMode(false);
-      document.documentElement.classList.remove('dark');
-    }
-  }, []);
-
-  const toggleDarkMode = () => {
-    if (isDarkMode) {
-      document.documentElement.classList.remove('dark');
-      localStorage.setItem('theme', 'light');
-      setIsDarkMode(false);
-    } else {
-      document.documentElement.classList.add('dark');
-      localStorage.setItem('theme', 'dark');
-      setIsDarkMode(true);
-    }
-  };
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
         const docSnap = await getDoc(doc(db, "users", user.uid));
-        if (docSnap.exists()) setPlayerData(docSnap.data());
+        if (docSnap.exists()) {
+          setPlayerData(docSnap.data() as PlayerData);
+        }
       }
     });
     return () => unsubscribe();
   }, []);
 
-  // ⭐️ [수정] html-to-image 구문으로 교체
   const handleDownload = async () => {
     if (!printRef.current) return;
     try {
       const bgColor = isDarkMode ? "#09090b" : "#f4f4f5";
-      
-      // html-to-image의 toPng 함수 사용
       const dataUrl = await toPng(printRef.current, {
         backgroundColor: bgColor,
-        pixelRatio: 2, // 기존 scale: 2와 동일한 고화질 처리
+        pixelRatio: 2,
       });
-      
+
       const link = document.createElement("a");
       link.href = dataUrl;
-      link.download = `chunithm_rating_${new Date().getTime()}.png`;
+      link.download = `chunithm_rating_${Date.now()}.png`;
       link.click();
     } catch (error) {
       console.error("캡처 에러:", error);
@@ -118,69 +54,118 @@ export default function ExportPage() {
 
   return (
     <div className="min-h-screen bg-zinc-100 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 transition-colors duration-300">
-      
       <nav className="w-full max-w-7xl mx-auto px-4 py-4 md:px-8 flex justify-between items-center">
-        <Link href="/" className="text-lg font-black hover:text-blue-500 transition">← 메인으로</Link>
+        <Link href="/" className="text-lg font-black hover:text-blue-500 transition">
+          ← 메인으로
+        </Link>
       </nav>
 
       <div className="max-w-7xl mx-auto p-4 md:p-8 flex flex-col md:flex-row gap-8 items-start">
-        
+        {/* 제어 패널 */}
         <div className="w-full md:w-72 bg-white dark:bg-zinc-900 p-6 rounded-2xl shadow-sm border border-zinc-200 dark:border-zinc-800 shrink-0 sticky top-8 z-10">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-xl font-bold dark:text-white">사진관 설정</h2>
-            <button onClick={toggleDarkMode} className="text-xl p-2 rounded-full bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 transition">
+            <button
+              onClick={toggleDarkMode}
+              className="text-xl p-2 rounded-full bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 transition"
+              aria-label="테마 전환"
+            >
               {isDarkMode ? "☀️" : "🌙"}
             </button>
           </div>
-          
+
           <div className="flex flex-col gap-4 mb-8">
             <label className="flex items-center gap-3 cursor-pointer">
-              <input type="checkbox" checked={showRating} onChange={(e) => setShowRating(e.target.checked)} className="w-4 h-4 accent-blue-500" />
-              <span className="text-sm font-medium dark:text-zinc-300">레이팅 보여짐</span>
+              <input
+                type="checkbox"
+                checked={showRating}
+                onChange={(e) => setShowRating(e.target.checked)}
+                className="w-4 h-4 accent-blue-500"
+              />
+              <span className="text-sm font-medium dark:text-zinc-300">레이팅 표시</span>
             </label>
             <label className="flex items-center gap-3 cursor-pointer">
-              <input type="checkbox" checked={showName} onChange={(e) => setShowName(e.target.checked)} className="w-4 h-4 accent-blue-500" />
-              <span className="text-sm font-medium dark:text-zinc-300">닉네임 보여짐</span>
+              <input
+                type="checkbox"
+                checked={showName}
+                onChange={(e) => setShowName(e.target.checked)}
+                className="w-4 h-4 accent-blue-500"
+              />
+              <span className="text-sm font-medium dark:text-zinc-300">닉네임 표시</span>
             </label>
             <label className="flex items-center gap-3 cursor-pointer">
-              <input type="checkbox" checked={showPlayCount} onChange={(e) => setShowPlayCount(e.target.checked)} className="w-4 h-4 accent-blue-500" />
-              <span className="text-sm font-medium dark:text-zinc-300">플레이 카운트 보여짐</span>
+              <input
+                type="checkbox"
+                checked={showPlayCount}
+                onChange={(e) => setShowPlayCount(e.target.checked)}
+                className="w-4 h-4 accent-blue-500"
+              />
+              <span className="text-sm font-medium dark:text-zinc-300">플레이 카운트 표시</span>
             </label>
           </div>
-          <button onClick={handleDownload} className="w-full flex justify-center items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-xl transition-colors">
+
+          <button
+            onClick={handleDownload}
+            className="w-full flex justify-center items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-xl transition-colors cursor-pointer"
+          >
             <span>📥 이미지 다운로드</span>
           </button>
         </div>
 
+        {/* 출력 캔버스 */}
         {!playerData ? (
           <div className="flex-1 p-10 text-center text-zinc-500">데이터를 불러오는 중입니다...</div>
         ) : (
           <div className="flex-1 overflow-x-auto pb-4">
             <div className="w-fit">
-              <div ref={printRef} style={{ width: "1100px" }} className="shrink-0 bg-zinc-100 dark:bg-zinc-950 p-10 rounded-xl relative transition-colors duration-300">
-                
+              <div
+                ref={printRef}
+                style={{ width: "1100px" }}
+                className="shrink-0 bg-zinc-100 dark:bg-zinc-950 p-10 rounded-xl relative transition-colors duration-300"
+              >
+                {/* 헤더 */}
                 <div className="flex justify-between items-center border-b border-zinc-300 dark:border-zinc-800 pb-6 mb-8">
                   <div className="flex items-center gap-6">
                     <div className="w-24 h-24 bg-white dark:bg-zinc-900 rounded-2xl border-2 border-zinc-200 dark:border-zinc-700 overflow-hidden shrink-0 flex justify-center items-center shadow-lg relative">
                       {playerData.characterImage ? (
-                        <img src={getProxyUrl(playerData.characterImage)} crossOrigin="anonymous" alt="Character" className="w-full h-full object-cover scale-110" />
+                        <img
+                          src={getProxyUrl(playerData.characterImage)}
+                          crossOrigin="anonymous"
+                          alt="Character"
+                          className="w-full h-full object-cover scale-110"
+                        />
                       ) : (
                         <span className="text-4xl">👤</span>
                       )}
                     </div>
-                    
+
                     <div className="flex flex-col justify-center py-2">
-                      <h1 className="text-4xl font-black tracking-widest text-zinc-900 dark:text-white mb-2">CHUNITHM RECORD</h1>
+                      <h1 className="text-4xl font-black tracking-widest text-zinc-900 dark:text-white mb-2">
+                        CHUNITHM RECORD
+                      </h1>
                       {showName && (
                         <div className="flex items-center gap-3">
-                          <p className="text-zinc-500 dark:text-zinc-400 text-lg">Player: <span className="font-bold text-zinc-900 dark:text-white">{playerData.name}</span></p>
-                          {playerData.classEmblem && <img src={getProxyUrl(playerData.classEmblem)} crossOrigin="anonymous" alt="Class" className="h-6 object-contain drop-shadow-md" />}
+                          <p className="text-zinc-500 dark:text-zinc-400 text-lg">
+                            Player: <span className="font-bold text-zinc-900 dark:text-white">{playerData.name}</span>
+                          </p>
+                          {playerData.classEmblem && (
+                            <img
+                              src={getProxyUrl(playerData.classEmblem)}
+                              crossOrigin="anonymous"
+                              alt="Class"
+                              className="h-6 object-contain drop-shadow-md"
+                            />
+                          )}
                         </div>
                       )}
-                      {showPlayCount && <p className="text-zinc-500 text-sm mt-1">Lv. {playerData.level} / Play Count: {playerData.playCount || 0}</p>}
+                      {showPlayCount && (
+                        <p className="text-zinc-500 text-sm mt-1">
+                          Lv. {playerData.level} / Play Count: {playerData.playCount || 0}
+                        </p>
+                      )}
                     </div>
                   </div>
-                  
+
                   <div className="text-right bg-white dark:bg-zinc-900 px-6 py-3 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm">
                     <div className="text-sm font-bold text-amber-500 tracking-widest mb-1">MAX RATING</div>
                     <div className="text-5xl font-black text-zinc-900 dark:text-white">
@@ -189,40 +174,56 @@ export default function ExportPage() {
                   </div>
                 </div>
 
+                {/* BEST 30 */}
                 <div className="mb-10">
                   <h3 className="text-xl font-black mb-4 flex items-center gap-2 text-zinc-900 dark:text-white">
                     <span className="w-2 h-6 bg-amber-500 rounded-full"></span> BEST 30
                   </h3>
                   <div className="grid grid-cols-5 gap-3">
-                    {playerData.best?.map((song: any, index: number) => {
+                    {playerData.best?.map((song: ChartScore, index: number) => {
                       const constant = getConstant(song);
                       const trackRating = constant ? calculateTrackRating(constant, song.score) : 0;
-                      const dbArray = Array.isArray(chunirecDB) ? chunirecDB : (chunirecDB as any).songs || [];
-                      const songMeta = dbArray.find((s: any) => (song.idx && s.idx === song.idx) || (s.title === song.title));
-                      
-                      return <SongCard key={`best-${index}`} song={song} constant={constant} trackRating={trackRating} songId={songMeta?.img || null} />;
+                      const songMeta = findSongMeta(song);
+
+                      return (
+                        <SongCard
+                          key={`best-${index}`}
+                          song={song}
+                          constant={constant}
+                          trackRating={trackRating}
+                          songId={songMeta?.img || null}
+                        />
+                      );
                     })}
                   </div>
                 </div>
 
+                {/* NEW 20 */}
                 <div className="mb-6">
                   <h3 className="text-xl font-black mb-4 flex items-center gap-2 text-zinc-900 dark:text-white">
                     <span className="w-2 h-6 bg-blue-500 rounded-full"></span> NEW 20
                   </h3>
                   <div className="grid grid-cols-5 gap-3">
-                    {playerData.new?.map((song: any, index: number) => {
+                    {playerData.new?.map((song: ChartScore, index: number) => {
                       const constant = getConstant(song);
                       const trackRating = constant ? calculateTrackRating(constant, song.score) : 0;
-                      const dbArray = Array.isArray(chunirecDB) ? chunirecDB : (chunirecDB as any).songs || [];
-                      const songMeta = dbArray.find((s: any) => (song.idx && s.idx === song.idx) || (s.title === song.title));
-                      
-                      return <SongCard key={`new-${index}`} song={song} constant={constant} trackRating={trackRating} songId={songMeta?.img || null} />;
+                      const songMeta = findSongMeta(song);
+
+                      return (
+                        <SongCard
+                          key={`new-${index}`}
+                          song={song}
+                          constant={constant}
+                          trackRating={trackRating}
+                          songId={songMeta?.img || null}
+                        />
+                      );
                     })}
                   </div>
                 </div>
 
                 <div className="mt-12 pt-4 border-t border-zinc-300 dark:border-zinc-800 text-right text-zinc-400 dark:text-zinc-600 text-sm font-bold tracking-widest">
-                  Generated by my-chuni-app
+                  Generated by CHUNITHM SHIFT
                 </div>
               </div>
             </div>

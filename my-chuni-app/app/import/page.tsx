@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { doc, setDoc } from 'firebase/firestore';
-import { db, auth } from '../../firebase.js'; // 🔥 본인의 firebase 설정 경로로 맞춰주세요
+import { db, auth } from '../../firebase';
 
 export default function DataImportPage() {
   const [status, setStatus] = useState("대기 중...");
