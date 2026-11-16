@@ -72,6 +72,133 @@ export function calculateTrackRating(constant: number, score: number): number {
 }
 
 /**
+ * 스코어에 따른 랭크(Rank) 문자열 및 스타일 반환
+ */
+export function getScoreRank(score: number): { rank: string; colorClass: string; badgeBg: string } {
+  if (score >= 1009000) {
+    return {
+      rank: "SSS+",
+      colorClass: "text-amber-300 font-black",
+      badgeBg: "bg-linear-to-r from-amber-400 via-pink-400 to-indigo-400 text-black font-black",
+    };
+  }
+  if (score >= 1007500) {
+    return {
+      rank: "SSS",
+      colorClass: "text-amber-400 font-extrabold",
+      badgeBg: "bg-amber-400 text-zinc-950 font-black shadow-amber-500/30",
+    };
+  }
+  if (score >= 1005000) {
+    return {
+      rank: "SS+",
+      colorClass: "text-yellow-300 font-extrabold",
+      badgeBg: "bg-linear-to-r from-yellow-300 to-amber-500 text-zinc-950 font-black",
+    };
+  }
+  if (score >= 1000000) {
+    return {
+      rank: "SS",
+      colorClass: "text-yellow-400 font-extrabold",
+      badgeBg: "bg-yellow-400 text-zinc-950 font-black",
+    };
+  }
+  if (score >= 990000) {
+    return {
+      rank: "S+",
+      colorClass: "text-emerald-400 font-bold",
+      badgeBg: "bg-emerald-500 text-white font-bold",
+    };
+  }
+  if (score >= 975000) {
+    return {
+      rank: "S",
+      colorClass: "text-emerald-500 font-bold",
+      badgeBg: "bg-emerald-600 text-white font-bold",
+    };
+  }
+  if (score >= 950000) {
+    return {
+      rank: "AAA",
+      colorClass: "text-sky-400 font-bold",
+      badgeBg: "bg-sky-600 text-white font-bold",
+    };
+  }
+  if (score >= 925000) {
+    return {
+      rank: "AA",
+      colorClass: "text-sky-500 font-medium",
+      badgeBg: "bg-sky-700 text-white font-medium",
+    };
+  }
+  if (score >= 900000) {
+    return {
+      rank: "A",
+      colorClass: "text-blue-400 font-medium",
+      badgeBg: "bg-blue-700 text-white font-medium",
+    };
+  }
+  if (score >= 800000) {
+    return {
+      rank: "BBB",
+      colorClass: "text-zinc-400",
+      badgeBg: "bg-zinc-700 text-zinc-200",
+    };
+  }
+  return {
+    rank: "C",
+    colorClass: "text-zinc-500",
+    badgeBg: "bg-zinc-800 text-zinc-400",
+  };
+}
+
+/**
+ * 레이팅 수치에 따른 등급(티어) 스타일 반환 (Rainbow, Platinum, Gold 등)
+ */
+export function getRatingTier(rating: number): { tierName: string; textClass: string; badgeClass: string } {
+  if (rating >= 16.0) {
+    return {
+      tierName: "Rainbow",
+      textClass: "bg-linear-to-r from-red-400 via-yellow-300 via-emerald-400 via-sky-400 to-purple-400 bg-clip-text text-transparent drop-shadow-md",
+      badgeClass: "bg-linear-to-r from-red-500 via-yellow-400 via-emerald-400 to-purple-500 text-zinc-950 shadow-lg shadow-purple-500/20",
+    };
+  }
+  if (rating >= 15.25) {
+    return {
+      tierName: "Platinum",
+      textClass: "text-slate-100 drop-shadow-[0_0_8px_rgba(255,255,255,0.7)]",
+      badgeClass: "bg-linear-to-r from-slate-200 via-white to-slate-300 text-zinc-950 shadow-md shadow-white/20",
+    };
+  }
+  if (rating >= 14.5) {
+    return {
+      tierName: "Gold",
+      textClass: "text-amber-400 drop-shadow-[0_0_8px_rgba(251,191,36,0.5)]",
+      badgeClass: "bg-linear-to-r from-amber-400 via-yellow-300 to-amber-500 text-zinc-950 shadow-md shadow-amber-500/30",
+    };
+  }
+  if (rating >= 13.25) {
+    return {
+      tierName: "Silver",
+      textClass: "text-zinc-300",
+      badgeClass: "bg-zinc-300 text-zinc-900",
+    };
+  }
+  if (rating >= 12.0) {
+    return {
+      tierName: "Bronze",
+      textClass: "text-amber-700 dark:text-amber-600",
+      badgeClass: "bg-amber-700 text-white",
+    };
+  }
+  return {
+    tierName: "Standard",
+    textClass: "text-purple-400",
+    badgeClass: "bg-purple-600 text-white",
+  };
+}
+
+/**
  * 전체 곡들의 평균 레이팅 계산
  */
 export function calculateAverageRating(songs: ChartScore[]): number {
@@ -89,4 +216,3 @@ export function calculateAverageRating(songs: ChartScore[]): number {
 
   return count > 0 ? Math.floor((total / count) * 100) / 100 : 0;
 }
-
