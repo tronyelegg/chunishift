@@ -32,6 +32,8 @@ export interface PlayerData {
 export interface ChartMeta {
   const: number;
   level: number;
+  levelDisplay?: string;
+  maxCombo?: number;
   isConstUnknown?: boolean;
 }
 

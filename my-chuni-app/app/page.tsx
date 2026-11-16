@@ -242,6 +242,14 @@ export default function Home() {
             </button>
 
             <Link
+              href="/songs"
+              className="px-3 py-1.5 text-xs sm:text-sm font-bold text-zinc-700 dark:text-zinc-200 bg-zinc-100 dark:bg-zinc-800/80 hover:bg-zinc-200 dark:hover:bg-zinc-700 border border-zinc-200 dark:border-zinc-700 rounded-lg transition-colors flex items-center gap-1.5"
+            >
+              <span>🎵</span>
+              <span>상수표</span>
+            </Link>
+
+            <Link
               href="/export"
               className="px-3 py-1.5 text-xs sm:text-sm font-bold text-zinc-700 dark:text-zinc-200 bg-zinc-100 dark:bg-zinc-800/80 hover:bg-zinc-200 dark:hover:bg-zinc-700 border border-zinc-200 dark:border-zinc-700 rounded-lg transition-colors flex items-center gap-1.5"
             >
