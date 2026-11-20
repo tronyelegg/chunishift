@@ -1,0 +1,38 @@
+name: Update CHUNITHM Song Database
+
+on:
+  schedule:
+    # 매주 월요일, 목요일 한국 시간 오후 3시 (UTC 06:00)에 자동 실행
+    - cron: '0 6 * * 1,4'
+  workflow_dispatch: # GitHub Actions 탭에서 수동 실행 지원
+
+jobs:
+  update-db:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Run Song DB Update Script
+        run: node scripts/update_db.js
+
+      - name: Check for Changes and Commit
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action Bot"
+          if git diff --quiet data/chunimaru_db.json; then
+            echo "변경 사항 없음. 최신 상태입니다."
+          else
+            echo "새로운 곡/상수 데이터 감지됨. 자동 커밋 및 푸시 진행."
+            git add data/chunimaru_db.json
+            git commit -m "chore(db): ChuniMaru API 최신 악곡 및 보면 상수 자동 동기화"
+            git push
+          fi

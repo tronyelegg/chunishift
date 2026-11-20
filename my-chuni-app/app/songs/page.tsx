@@ -197,7 +197,7 @@ export default function SongsPage() {
             CHUNITHM 보면 상수표
           </h1>
           <p className="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400 mb-4">
-            CHUNITHM 전체 1,500여 곡의 난이도별 세부 보면 상수(Internal Constant)를 검색하세요.
+            CHUNITHM 전체 {songs.length.toLocaleString()}곡의 난이도별 세부 보면 상수(Internal Constant)를 검색하세요.
             <br className="hidden sm:inline" />
             나무위키 한국어 번역명 및 음차(예: <strong>포세이큰 테일, 말쿠트, 엔드마크, 천본앵</strong>)나 작곡가 한국명(예: <strong>토파조, 리프, 사쿠죠</strong>)으로도 편리하게 검색할 수 있습니다.
           </p>

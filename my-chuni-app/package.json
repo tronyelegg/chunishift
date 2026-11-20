@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "update-db": "node scripts/update_db.js"
   },
   "dependencies": {
     "firebase": "^12.19.0",

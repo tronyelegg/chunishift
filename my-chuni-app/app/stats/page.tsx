@@ -398,7 +398,7 @@ export default function StatsPage() {
                 <div className="p-4 rounded-xl bg-zinc-50 dark:bg-zinc-950/60 border border-zinc-200/60 dark:border-zinc-800/60">
                   <span className="text-[10px] font-bold text-zinc-400 uppercase">지원 버전</span>
                   <div className="text-2xl font-black text-amber-500 mt-1">
-                    X-Verse-X
+                    {(rawSongDB as any).gameVersion || "Mate"}
                   </div>
                 </div>
               </div>
