@@ -11,6 +11,9 @@ import { getProxyUrl } from "../../lib/proxy";
 import { getScoreRank, getConstant } from "../../lib/rating";
 import rawSongDB from "../../data/chunimaru_db.json";
 import type { PlayerData, ChartScore, SongItem } from "../../lib/types";
+import SongDetailModal from "../../components/SongDetailModal";
+import Footer from "../../components/Footer";
+import BottomNav from "../../components/BottomNav";
 
 const TARGET_LEVELS = [
   "15+",
@@ -46,6 +49,11 @@ export default function LevelDistributionPage() {
   const [selectedLevel, setSelectedLevel] = useState<string>("14+");
   const [loading, setLoading] = useState(true);
   const { isDarkMode, toggleDarkMode } = useDarkMode();
+
+  // 모달 상태
+  const [modalSong, setModalSong] = useState<SongItem | null>(null);
+  const [modalScore, setModalScore] = useState<ChartScore | null>(null);
+  const [modalDiff, setModalDiff] = useState<string>("MAS");
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -146,7 +154,7 @@ export default function LevelDistributionPage() {
   const activeLevelSummary = levelDataMap[selectedLevel];
 
   return (
-    <div className="min-h-screen text-zinc-900 dark:text-zinc-100 font-sans transition-colors duration-300">
+    <div className="min-h-screen text-zinc-900 dark:text-zinc-100 font-sans transition-colors duration-300 flex flex-col pb-20 sm:pb-0">
       {/* 상단 네비게이션 */}
       <header className="sticky top-0 z-40 backdrop-blur-md bg-white/75 dark:bg-zinc-950/75 border-b border-zinc-200/80 dark:border-zinc-800/80">
         <div className="max-w-7xl mx-auto px-4 h-16 flex justify-between items-center">
@@ -165,25 +173,25 @@ export default function LevelDistributionPage() {
           <div className="flex gap-2 sm:gap-3 items-center">
             <Link
               href="/"
-              className="px-3 py-1.5 text-xs sm:text-sm font-bold text-zinc-700 dark:text-zinc-200 hover:text-sky-500 transition"
+              className="px-3 py-1.5 text-xs sm:text-sm font-bold text-zinc-700 dark:text-zinc-200 hover:text-sky-500 transition hidden md:inline-flex"
             >
               대시보드
             </Link>
             <Link
               href="/songs"
-              className="px-3 py-1.5 text-xs sm:text-sm font-bold text-zinc-700 dark:text-zinc-200 hover:text-sky-500 transition"
+              className="px-3 py-1.5 text-xs sm:text-sm font-bold text-zinc-700 dark:text-zinc-200 hover:text-sky-500 transition hidden md:inline-flex"
             >
               상수표
             </Link>
             <Link
               href="/stats"
-              className="px-3 py-1.5 text-xs sm:text-sm font-bold text-zinc-700 dark:text-zinc-200 hover:text-sky-500 transition"
+              className="px-3 py-1.5 text-xs sm:text-sm font-bold text-zinc-700 dark:text-zinc-200 hover:text-sky-500 transition hidden md:inline-flex"
             >
               통계
             </Link>
             <Link
               href="/export"
-              className="px-3 py-1.5 text-xs sm:text-sm font-bold text-zinc-700 dark:text-zinc-200 hover:text-sky-500 transition"
+              className="px-3 py-1.5 text-xs sm:text-sm font-bold text-zinc-700 dark:text-zinc-200 hover:text-sky-500 transition hidden md:inline-flex"
             >
               사진관
             </Link>
@@ -311,7 +319,12 @@ export default function LevelDistributionPage() {
                     return (
                       <div
                         key={`${song.id || song.idx}-${diff}-${index}`}
-                        className={`flex items-center gap-3 p-3 rounded-xl border transition-all ${
+                        onClick={() => {
+                          setModalSong(song);
+                          setModalScore(userScore || null);
+                          setModalDiff(diff);
+                        }}
+                        className={`flex items-center gap-3 p-3 rounded-xl border transition-all cursor-pointer hover:-translate-y-0.5 hover:shadow-md ${
                           isPlayed
                             ? "bg-zinc-50/90 dark:bg-zinc-950/60 border-zinc-200/80 dark:border-zinc-800/80 shadow-xs"
                             : "bg-white/40 dark:bg-zinc-900/40 border-zinc-200/40 dark:border-zinc-800/40 opacity-70 hover:opacity-100"
@@ -403,6 +416,24 @@ export default function LevelDistributionPage() {
           </div>
         )}
       </main>
+
+      {/* 곡 상세 모달 (SDVX.in 및 YouTube @chunithm_humen 연동) */}
+      <SongDetailModal
+        isOpen={!!modalSong}
+        onClose={() => {
+          setModalSong(null);
+          setModalScore(null);
+        }}
+        song={modalSong}
+        userScore={modalScore}
+        initialDiff={modalDiff}
+      />
+
+      {/* 데이터 출처 및 저작권 푸터 */}
+      <Footer />
+
+      {/* 모바일 하단 네비게이션 바 */}
+      <BottomNav />
     </div>
   );
 }

@@ -18,6 +18,8 @@ import {
 } from "../../lib/rating";
 import { getProxyUrl } from "../../lib/proxy";
 import type { PlayerData, ChartScore } from "../../lib/types";
+import Footer from "../../components/Footer";
+import BottomNav from "../../components/BottomNav";
 
 export default function ExportPage() {
   const [playerData, setPlayerData] = useState<PlayerData | null>(null);
@@ -25,6 +27,7 @@ export default function ExportPage() {
   const [showName, setShowName] = useState(true);
   const [showPlayCount, setShowPlayCount] = useState(true);
   const [isExporting, setIsExporting] = useState(false);
+  const [exportedImageUrl, setExportedImageUrl] = useState<string | null>(null);
   const { isDarkMode, toggleDarkMode } = useDarkMode();
   const printRef = useRef<HTMLDivElement>(null);
 
@@ -61,10 +64,17 @@ export default function ExportPage() {
         cacheBust: true,
       });
 
-      const link = document.createElement("a");
-      link.href = dataUrl;
-      link.download = `chunishift_${playerData?.name || "rating"}_${Date.now()}.png`;
-      link.click();
+      setExportedImageUrl(dataUrl);
+
+      // 자동 다운로드 시도 (데스크톱 및 다운로드 지원 브라우저)
+      try {
+        const link = document.createElement("a");
+        link.href = dataUrl;
+        link.download = `chunishift_${playerData?.name || "rating"}_${Date.now()}.png`;
+        link.click();
+      } catch (e) {
+        console.warn("자동 다운로드 트리거 실패 (모바일 프리뷰 모달 사용 권장):", e);
+      }
     } catch (error) {
       console.error("캡처 에러:", error);
       alert("이미지를 생성하는 데 실패했습니다. 잠시 후 다시 시도해 주세요.");
@@ -74,7 +84,7 @@ export default function ExportPage() {
   };
 
   return (
-    <div className="min-h-screen text-zinc-900 dark:text-zinc-100 transition-colors duration-300">
+    <div className="min-h-screen text-zinc-900 dark:text-zinc-100 transition-colors duration-300 flex flex-col pb-20 sm:pb-0">
       {/* 상단 네비게이션 */}
       <header className="sticky top-0 z-40 backdrop-blur-md bg-white/75 dark:bg-zinc-950/75 border-b border-zinc-200/80 dark:border-zinc-800/80">
         <div className="max-w-7xl mx-auto px-4 h-16 flex justify-between items-center">
@@ -83,32 +93,32 @@ export default function ExportPage() {
             className="flex items-center gap-2 text-sm font-black text-sky-600 dark:text-sky-400 hover:text-sky-700 transition"
           >
             <span>←</span>
-            <span>메인 대시보드로 돌아가기</span>
+            <span>대시보드</span>
           </Link>
 
           <div className="flex items-center gap-2 sm:gap-3">
             <Link
               href="/songs"
-              className="px-2.5 sm:px-3 py-1.5 text-xs sm:text-sm font-bold text-zinc-700 dark:text-zinc-200 bg-zinc-100 dark:bg-zinc-800/80 hover:bg-zinc-200 dark:hover:bg-zinc-700 border border-zinc-200 dark:border-zinc-700 rounded-lg transition-colors flex items-center gap-1.5"
+              className="px-2.5 sm:px-3 py-1.5 text-xs sm:text-sm font-bold text-zinc-700 dark:text-zinc-200 bg-zinc-100 dark:bg-zinc-800/80 hover:bg-zinc-200 dark:hover:bg-zinc-700 border border-zinc-200 dark:border-zinc-700 rounded-lg transition-colors hidden md:inline-flex items-center gap-1.5"
             >
               <span>🎵</span>
-              <span className="hidden sm:inline">상수표</span>
+              <span>상수표</span>
             </Link>
 
             <Link
               href="/stats"
-              className="px-2.5 sm:px-3 py-1.5 text-xs sm:text-sm font-bold text-zinc-700 dark:text-zinc-200 bg-zinc-100 dark:bg-zinc-800/80 hover:bg-zinc-200 dark:hover:bg-zinc-700 border border-zinc-200 dark:border-zinc-700 rounded-lg transition-colors flex items-center gap-1.5"
+              className="px-2.5 sm:px-3 py-1.5 text-xs sm:text-sm font-bold text-zinc-700 dark:text-zinc-200 bg-zinc-100 dark:bg-zinc-800/80 hover:bg-zinc-200 dark:hover:bg-zinc-700 border border-zinc-200 dark:border-zinc-700 rounded-lg transition-colors hidden md:inline-flex items-center gap-1.5"
             >
               <span>📊</span>
-              <span className="hidden sm:inline">통계</span>
+              <span>통계</span>
             </Link>
 
             <Link
               href="/level-distribution"
-              className="px-2.5 sm:px-3 py-1.5 text-xs sm:text-sm font-bold text-zinc-700 dark:text-zinc-200 bg-zinc-100 dark:bg-zinc-800/80 hover:bg-zinc-200 dark:hover:bg-zinc-700 border border-zinc-200 dark:border-zinc-700 rounded-lg transition-colors flex items-center gap-1.5"
+              className="px-2.5 sm:px-3 py-1.5 text-xs sm:text-sm font-bold text-zinc-700 dark:text-zinc-200 bg-zinc-100 dark:bg-zinc-800/80 hover:bg-zinc-200 dark:hover:bg-zinc-700 border border-zinc-200 dark:border-zinc-700 rounded-lg transition-colors hidden md:inline-flex items-center gap-1.5"
             >
               <span>📈</span>
-              <span className="hidden sm:inline">분포</span>
+              <span>분포</span>
             </Link>
             <span className="text-xs font-bold text-zinc-500 hidden sm:inline">📸 사진관 (성과표 이미지 생성)</span>
             <button
@@ -180,6 +190,12 @@ export default function ExportPage() {
           <div className="flex-1 p-16 text-center text-zinc-500">데이터를 불러오는 중입니다...</div>
         ) : (
           <div className="flex-1 overflow-x-auto pb-6 w-full">
+            {/* 모바일 가이드 */}
+            <div className="sm:hidden mb-3 p-2.5 rounded-xl bg-sky-50 dark:bg-sky-950/40 border border-sky-200 dark:border-sky-800/60 text-xs font-bold text-sky-600 dark:text-sky-400 flex items-center gap-2">
+              <span>👉</span>
+              <span>모바일에서는 좌우로 스크롤하여 성과표 전체를 확인할 수 있습니다.</span>
+            </div>
+
             <div className="w-fit mx-auto">
               {/* 이미지로 캡처되는 실제 영역 */}
               <div
@@ -332,6 +348,74 @@ export default function ExportPage() {
           </div>
         )}
       </div>
+
+      {/* 모바일 최적화 고화질 이미지 저장 모달 (iOS Safari / Android 지원) */}
+      {exportedImageUrl && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 overflow-y-auto"
+          onClick={() => setExportedImageUrl(null)}
+        >
+          <div
+            className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl max-w-2xl w-full p-5 sm:p-6 shadow-2xl relative my-auto animate-in fade-in zoom-in-95"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-center mb-4">
+              <div className="flex items-center gap-2">
+                <span className="text-xl">✨</span>
+                <h3 className="text-base sm:text-lg font-black text-zinc-900 dark:text-white">
+                  성과표 이미지 생성 완료
+                </h3>
+              </div>
+              <button
+                onClick={() => setExportedImageUrl(null)}
+                className="w-8 h-8 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 text-sm font-bold cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* 모바일 저장 가이드 안내 배너 */}
+            <div className="mb-4 p-3.5 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-300/80 dark:border-amber-700/60 text-amber-800 dark:text-amber-200 text-xs leading-relaxed flex items-start gap-2.5">
+              <span className="text-base shrink-0">📱</span>
+              <div>
+                <strong className="block font-black mb-0.5">모바일 (iOS Safari / Android) 저장 안내</strong>
+                아래 이미지를 <strong>1~2초간 꾹 눌러서</strong> 나오는 팝업 메뉴에서 <strong>[사진에 저장]</strong> 또는 <strong>[이미지 다운로드]</strong>를 선택하세요!
+              </div>
+            </div>
+
+            {/* 이미지 미리보기 */}
+            <div className="max-h-[55vh] overflow-y-auto rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-950 p-2 mb-4">
+              <img
+                src={exportedImageUrl}
+                alt="Generated Chunithm Record"
+                className="w-full h-auto rounded-lg shadow-sm"
+              />
+            </div>
+
+            <div className="flex gap-2">
+              <a
+                href={exportedImageUrl}
+                download={`chunishift_${playerData?.name || "rating"}_${Date.now()}.png`}
+                className="flex-1 py-3 px-4 bg-linear-to-r from-sky-500 to-indigo-600 hover:from-sky-600 hover:to-indigo-700 text-white font-black rounded-xl text-center text-xs sm:text-sm shadow-md transition cursor-pointer"
+              >
+                📥 파일로 다운로드
+              </a>
+              <button
+                onClick={() => setExportedImageUrl(null)}
+                className="py-3 px-5 bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700 font-bold rounded-xl text-xs sm:text-sm transition cursor-pointer"
+              >
+                닫기
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 데이터 출처 및 저작권 푸터 */}
+      <Footer />
+
+      {/* 모바일 하단 네비게이션 바 */}
+      <BottomNav />
     </div>
   );
 }

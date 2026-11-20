@@ -9,6 +9,7 @@ interface SongCardProps {
   trackRating: number;
   songId?: string | null;
   index?: number;
+  onClick?: () => void;
 }
 
 const diffStyles: Record<
@@ -53,6 +54,7 @@ function SongCardComponent({
   trackRating,
   songId,
   index,
+  onClick,
 }: SongCardProps) {
   const [imgError, setImgError] = useState(false);
 
@@ -69,7 +71,10 @@ function SongCardComponent({
 
   return (
     <div
-      className={`group relative flex items-center gap-2 sm:gap-2.5 p-2 sm:p-2.5 rounded-xl bg-white/80 dark:bg-zinc-900/80 backdrop-blur-sm border ${style.border} ${style.glow} shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 overflow-hidden cursor-pointer`}
+      onClick={onClick}
+      role={onClick ? "button" : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      className={`group relative flex items-center gap-2 sm:gap-2.5 p-2 sm:p-2.5 rounded-xl bg-white/80 dark:bg-zinc-900/80 backdrop-blur-sm border ${style.border} ${style.glow} shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 overflow-hidden cursor-pointer select-none`}
     >
       {/* 순번 표시 */}
       {index != null && (

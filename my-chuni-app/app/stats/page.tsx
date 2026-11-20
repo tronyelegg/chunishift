@@ -16,6 +16,8 @@ import {
 } from "../../lib/rating";
 import rawSongDB from "../../data/chunimaru_db.json";
 import type { PlayerData, ChartScore, SongItem } from "../../lib/types";
+import Footer from "../../components/Footer";
+import BottomNav from "../../components/BottomNav";
 
 export default function StatsPage() {
   const [playerData, setPlayerData] = useState<PlayerData | null>(null);
@@ -134,7 +136,7 @@ export default function StatsPage() {
   }, [allSongs]);
 
   return (
-    <div className="min-h-screen text-zinc-900 dark:text-zinc-100 font-sans transition-colors duration-300">
+    <div className="min-h-screen text-zinc-900 dark:text-zinc-100 font-sans transition-colors duration-300 flex flex-col pb-20 sm:pb-0">
       {/* 상단 네비게이션 */}
       <header className="sticky top-0 z-40 backdrop-blur-md bg-white/75 dark:bg-zinc-950/75 border-b border-zinc-200/80 dark:border-zinc-800/80">
         <div className="max-w-7xl mx-auto px-4 h-16 flex justify-between items-center">
@@ -153,25 +155,25 @@ export default function StatsPage() {
           <div className="flex gap-2 sm:gap-3 items-center">
             <Link
               href="/"
-              className="px-3 py-1.5 text-xs sm:text-sm font-bold text-zinc-700 dark:text-zinc-200 hover:text-sky-500 transition"
+              className="px-3 py-1.5 text-xs sm:text-sm font-bold text-zinc-700 dark:text-zinc-200 hover:text-sky-500 transition hidden md:inline-flex"
             >
               대시보드
             </Link>
             <Link
               href="/songs"
-              className="px-3 py-1.5 text-xs sm:text-sm font-bold text-zinc-700 dark:text-zinc-200 hover:text-sky-500 transition"
+              className="px-3 py-1.5 text-xs sm:text-sm font-bold text-zinc-700 dark:text-zinc-200 hover:text-sky-500 transition hidden md:inline-flex"
             >
               상수표
             </Link>
             <Link
               href="/level-distribution"
-              className="px-3 py-1.5 text-xs sm:text-sm font-bold text-zinc-700 dark:text-zinc-200 hover:text-sky-500 transition"
+              className="px-3 py-1.5 text-xs sm:text-sm font-bold text-zinc-700 dark:text-zinc-200 hover:text-sky-500 transition hidden md:inline-flex"
             >
               레벨별 분포
             </Link>
             <Link
               href="/export"
-              className="px-3 py-1.5 text-xs sm:text-sm font-bold text-zinc-700 dark:text-zinc-200 hover:text-sky-500 transition"
+              className="px-3 py-1.5 text-xs sm:text-sm font-bold text-zinc-700 dark:text-zinc-200 hover:text-sky-500 transition hidden md:inline-flex"
             >
               사진관
             </Link>
@@ -406,6 +408,12 @@ export default function StatsPage() {
           </div>
         )}
       </main>
+
+      {/* 데이터 출처 및 저작권 푸터 */}
+      <Footer />
+
+      {/* 모바일 하단 네비게이션 바 */}
+      <BottomNav />
     </div>
   );
 }

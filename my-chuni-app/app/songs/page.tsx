@@ -7,6 +7,9 @@ import { getProxyUrl } from "../../lib/proxy";
 import { matchSongSearch, SONG_ALIASES, ARTIST_ALIASES } from "../../lib/koreanSearch";
 import rawSongDB from "../../data/chunimaru_db.json";
 import type { SongItem, DiffKey } from "../../lib/types";
+import SongDetailModal from "../../components/SongDetailModal";
+import Footer from "../../components/Footer";
+import BottomNav from "../../components/BottomNav";
 
 const ALL_GENRES = [
   "ALL",
@@ -137,7 +140,7 @@ export default function SongsPage() {
   }, [searchQuery, selectedGenre, selectedLevel, targetDiff, sortOption]);
 
   return (
-    <div className="min-h-screen text-zinc-900 dark:text-zinc-100 font-sans transition-colors duration-300">
+    <div className="min-h-screen text-zinc-900 dark:text-zinc-100 font-sans transition-colors duration-300 flex flex-col pb-20 sm:pb-0">
       {/* 상단 Sticky 헤더 */}
       <header className="sticky top-0 z-40 backdrop-blur-md bg-white/75 dark:bg-zinc-950/75 border-b border-zinc-200/80 dark:border-zinc-800/80 transition-colors">
         <div className="max-w-7xl mx-auto px-4 h-16 flex justify-between items-center">
@@ -156,25 +159,25 @@ export default function SongsPage() {
           <div className="flex gap-2 sm:gap-3 items-center">
             <Link
               href="/"
-              className="px-3 py-1.5 text-xs sm:text-sm font-bold text-zinc-700 dark:text-zinc-200 hover:text-sky-500 transition"
+              className="px-3 py-1.5 text-xs sm:text-sm font-bold text-zinc-700 dark:text-zinc-200 hover:text-sky-500 transition hidden md:inline-flex"
             >
               대시보드
             </Link>
             <Link
               href="/stats"
-              className="px-3 py-1.5 text-xs sm:text-sm font-bold text-zinc-700 dark:text-zinc-200 hover:text-sky-500 transition"
+              className="px-3 py-1.5 text-xs sm:text-sm font-bold text-zinc-700 dark:text-zinc-200 hover:text-sky-500 transition hidden md:inline-flex"
             >
               통계
             </Link>
             <Link
               href="/level-distribution"
-              className="px-3 py-1.5 text-xs sm:text-sm font-bold text-zinc-700 dark:text-zinc-200 hover:text-sky-500 transition"
+              className="px-3 py-1.5 text-xs sm:text-sm font-bold text-zinc-700 dark:text-zinc-200 hover:text-sky-500 transition hidden md:inline-flex"
             >
               레벨별 분포
             </Link>
             <Link
               href="/export"
-              className="px-3 py-1.5 text-xs sm:text-sm font-bold text-zinc-700 dark:text-zinc-200 hover:text-sky-500 transition"
+              className="px-3 py-1.5 text-xs sm:text-sm font-bold text-zinc-700 dark:text-zinc-200 hover:text-sky-500 transition hidden md:inline-flex"
             >
               사진관
             </Link>
@@ -235,17 +238,16 @@ export default function SongsPage() {
                 <button
                   key={diff}
                   onClick={() => setTargetDiff(diff)}
-                  className={`px-3 py-1 text-xs font-black rounded-lg transition-all cursor-pointer ${
-                    targetDiff === diff
-                      ? diff === "MAS"
-                        ? "bg-purple-600 text-white shadow-xs"
-                        : diff === "ULT"
+                  className={`px-3 py-1 text-xs font-black rounded-lg transition-all cursor-pointer ${targetDiff === diff
+                    ? diff === "MAS"
+                      ? "bg-purple-600 text-white shadow-xs"
+                      : diff === "ULT"
                         ? "bg-zinc-950 text-amber-400 border border-amber-400 shadow-xs"
                         : diff === "EXP"
-                        ? "bg-red-500 text-white shadow-xs"
-                        : "bg-sky-500 text-white shadow-xs"
-                      : "bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700"
-                  }`}
+                          ? "bg-red-500 text-white shadow-xs"
+                          : "bg-sky-500 text-white shadow-xs"
+                    : "bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700"
+                    }`}
                 >
                   {diff === "ALL" ? "전체 난이도" : diff}
                 </button>
@@ -261,11 +263,10 @@ export default function SongsPage() {
                 <button
                   key={lvl}
                   onClick={() => setSelectedLevel(lvl)}
-                  className={`px-2.5 py-1 text-xs font-bold rounded-lg transition cursor-pointer ${
-                    selectedLevel === lvl
-                      ? "bg-sky-600 text-white shadow-xs"
-                      : "bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700"
-                  }`}
+                  className={`px-2.5 py-1 text-xs font-bold rounded-lg transition cursor-pointer ${selectedLevel === lvl
+                    ? "bg-sky-600 text-white shadow-xs"
+                    : "bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700"
+                    }`}
                 >
                   {lvl}
                 </button>
@@ -281,11 +282,10 @@ export default function SongsPage() {
                 <button
                   key={genre}
                   onClick={() => setSelectedGenre(genre)}
-                  className={`px-2.5 py-1 text-xs font-semibold rounded-lg transition cursor-pointer ${
-                    selectedGenre === genre
-                      ? "bg-indigo-600 text-white shadow-xs font-black"
-                      : "bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700"
-                  }`}
+                  className={`px-2.5 py-1 text-xs font-semibold rounded-lg transition cursor-pointer ${selectedGenre === genre
+                    ? "bg-indigo-600 text-white shadow-xs font-black"
+                    : "bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700"
+                    }`}
                 >
                   {genre === "ALL" ? "전체 장르" : genre}
                 </button>
@@ -405,17 +405,15 @@ export default function SongsPage() {
                         return (
                           <div
                             key={diff}
-                            className={`flex flex-col items-center justify-center py-1 px-1 rounded-lg ${
-                              chart ? "bg-zinc-50 dark:bg-zinc-950/70 border border-zinc-200/60 dark:border-zinc-800/60" : "opacity-30"
-                            }`}
+                            className={`flex flex-col items-center justify-center py-1 px-1 rounded-lg ${chart ? "bg-zinc-50 dark:bg-zinc-950/70 border border-zinc-200/60 dark:border-zinc-800/60" : "opacity-30"
+                              }`}
                           >
                             <span className="text-[8px] font-black tracking-tight text-zinc-400 uppercase">
                               {diff}
                             </span>
                             <span
-                              className={`text-[11px] font-mono font-black ${
-                                chart ? style.text : "text-zinc-400"
-                              }`}
+                              className={`text-[11px] font-mono font-black ${chart ? style.text : "text-zinc-400"
+                                }`}
                             >
                               {constVal}
                             </span>
@@ -446,119 +444,19 @@ export default function SongsPage() {
         )}
       </main>
 
-      {/* 곡 상세 모달 */}
-      {selectedSong && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4">
-          <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl max-w-lg w-full p-6 shadow-2xl overflow-hidden relative animate-in fade-in zoom-in-95 duration-200">
-            <button
-              onClick={() => setSelectedSong(null)}
-              className="absolute top-4 right-4 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 text-xl font-bold cursor-pointer"
-            >
-              ✕
-            </button>
+      {/* 곡 상세 모달 (SDVX.in 및 YouTube @chunithm_humen 연동) */}
+      <SongDetailModal
+        isOpen={!!selectedSong}
+        onClose={() => setSelectedSong(null)}
+        song={selectedSong}
+        initialDiff={targetDiff !== "ALL" ? targetDiff : "MAS"}
+      />
 
-            {/* 모달 상단 곡 정보 */}
-            <div className="flex gap-4 items-start mb-6">
-              <div className="w-20 h-20 shrink-0 rounded-xl overflow-hidden bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 shadow-md">
-                {selectedSong.img ? (
-                  <img
-                    src={getProxyUrl(
-                      `https://chunithm-net-eng.com/mobile/img/${selectedSong.img}.jpg`
-                    )}
-                    crossOrigin="anonymous"
-                    alt={selectedSong.title}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-3xl font-bold text-zinc-400">
-                    ♪
-                  </div>
-                )}
-              </div>
+      {/* 데이터 출처 및 저작권 푸터 */}
+      <Footer />
 
-              <div className="flex-1 min-w-0 pr-6">
-                <span className="text-[10px] font-black px-2 py-0.5 rounded bg-sky-100 dark:bg-sky-950 text-sky-600 dark:text-sky-400 inline-block mb-1">
-                  {selectedSong.genre}
-                </span>
-                <h3 className="text-lg font-black text-zinc-900 dark:text-white truncate">
-                  {selectedSong.title}
-                </h3>
-                {SONY_ALIASES_LIST(selectedSong.title) && (
-                  <p className="text-xs font-bold text-sky-500 mt-0.5">
-                    {SONY_ALIASES_LIST(selectedSong.title)}
-                  </p>
-                )}
-                <p className="text-xs text-zinc-500 dark:text-zinc-400 truncate mt-1">
-                  {selectedSong.artist}
-                  {ARTIST_ALIASES[selectedSong.artist] && (
-                    <span className="text-zinc-400 font-bold ml-1.5">
-                      ({ARTIST_ALIASES[selectedSong.artist][0]})
-                    </span>
-                  )}
-                </p>
-              </div>
-            </div>
-
-            {/* 채보 난이도 상세 테이블 */}
-            <div className="mb-6">
-              <h4 className="text-xs font-black text-zinc-400 uppercase tracking-wider mb-2.5">
-                난이도별 보면 상세 (Chart Constants)
-              </h4>
-              <div className="space-y-2">
-                {(["BAS", "ADV", "EXP", "MAS", "ULT"] as DiffKey[]).map((diff) => {
-                  const chart = selectedSong.charts ? selectedSong.charts[diff] : null;
-                  if (!chart && diff === "ULT") return null;
-
-                  const style = diffColorMap[diff];
-
-                  return (
-                    <div
-                      key={diff}
-                      className="flex items-center justify-between p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950/60 border border-zinc-200/60 dark:border-zinc-800/60"
-                    >
-                      <div className="flex items-center gap-2.5">
-                        <span
-                          className={`text-[10px] font-black px-2 py-0.5 rounded ${style.bg}`}
-                        >
-                          {diff}
-                        </span>
-                        <span className="text-xs font-bold text-zinc-700 dark:text-zinc-300">
-                          표기 레벨: {chart?.levelDisplay || "-"}
-                        </span>
-                      </div>
-
-                      <div className="flex items-center gap-4 text-xs font-mono">
-                        {chart?.maxCombo ? (
-                          <span className="text-zinc-400 text-[11px]">
-                            {chart.maxCombo.toLocaleString()} Notes
-                          </span>
-                        ) : null}
-                        <div className="flex items-baseline gap-1">
-                          <span className="text-[10px] text-zinc-400 font-sans font-bold">상수</span>
-                          <span
-                            className={`text-sm font-black ${
-                              chart ? style.text : "text-zinc-400"
-                            }`}
-                          >
-                            {chart?.const ? chart.const.toFixed(1) : chart?.level ? `${chart.level}.0` : "?"}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            <button
-              onClick={() => setSelectedSong(null)}
-              className="w-full py-2.5 rounded-xl bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700 text-xs font-black transition cursor-pointer"
-            >
-              닫기
-            </button>
-          </div>
-        </div>
-      )}
+      {/* 모바일 하단 네비게이션 바 */}
+      <BottomNav />
     </div>
   );
 }

@@ -22,8 +22,11 @@ import {
   findSongMeta,
   getRatingTier,
 } from "../lib/rating";
-import type { PlayerData, ChartScore } from "../lib/types";
+import type { PlayerData, ChartScore, SongItem } from "../lib/types";
 import PrivacyPolicyModal from "../components/PrivacyPolicyModal";
+import SongDetailModal from "../components/SongDetailModal";
+import Footer from "../components/Footer";
+import BottomNav from "../components/BottomNav";
 
 // 북마크릿 코드
 const BOOKMARKLET_CODE = `javascript:(function(){const s=document.createElement('script');s.src='https://chunishift.vercel.app/chunimain.js?t='+Date.now();document.body.appendChild(s);})();`;
@@ -38,6 +41,10 @@ export default function Home() {
   const [showBookmarkletModal, setShowBookmarkletModal] = useState<boolean>(false);
   const [showTermsModal, setShowTermsModal] = useState<boolean>(false);
   const [copied, setCopied] = useState<boolean>(false);
+
+  // 악곡 상세 모달 상태 (SDVX.in / YouTube 연동)
+  const [selectedSongMeta, setSelectedSongMeta] = useState<SongItem | null>(null);
+  const [selectedUserScore, setSelectedUserScore] = useState<ChartScore | null>(null);
 
   // 탭 및 정렬 상태 (maishift 스타일 컨트롤)
   const [activeTab, setActiveTab] = useState<TabType>("all");
@@ -222,7 +229,7 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen font-sans text-zinc-900 dark:text-zinc-100 transition-colors duration-300">
+    <div className="min-h-screen font-sans text-zinc-900 dark:text-zinc-100 transition-colors duration-300 flex flex-col pb-20 sm:pb-0">
       {/* 상단 Sticky Glassmorphism 네비게이션 바 */}
       <header className="sticky top-0 z-40 backdrop-blur-md bg-white/75 dark:bg-zinc-950/75 border-b border-zinc-200/80 dark:border-zinc-800/80 transition-colors">
         <div className="max-w-6xl mx-auto px-4 h-16 flex justify-between items-center">
@@ -251,34 +258,34 @@ export default function Home() {
 
             <Link
               href="/songs"
-              className="px-3 py-1.5 text-xs sm:text-sm font-bold text-zinc-700 dark:text-zinc-200 bg-zinc-100 dark:bg-zinc-800/80 hover:bg-zinc-200 dark:hover:bg-zinc-700 border border-zinc-200 dark:border-zinc-700 rounded-lg transition-colors flex items-center gap-1.5"
+              className="px-3 py-1.5 text-xs sm:text-sm font-bold text-zinc-700 dark:text-zinc-200 bg-zinc-100 dark:bg-zinc-800/80 hover:bg-zinc-200 dark:hover:bg-zinc-700 border border-zinc-200 dark:border-zinc-700 rounded-lg transition-colors hidden md:flex items-center gap-1.5"
             >
               <span>🎵</span>
-              <span className="hidden sm:inline">상수표</span>
+              <span>상수표</span>
             </Link>
 
             <Link
               href="/stats"
-              className="px-3 py-1.5 text-xs sm:text-sm font-bold text-zinc-700 dark:text-zinc-200 bg-zinc-100 dark:bg-zinc-800/80 hover:bg-zinc-200 dark:hover:bg-zinc-700 border border-zinc-200 dark:border-zinc-700 rounded-lg transition-colors flex items-center gap-1.5"
+              className="px-3 py-1.5 text-xs sm:text-sm font-bold text-zinc-700 dark:text-zinc-200 bg-zinc-100 dark:bg-zinc-800/80 hover:bg-zinc-200 dark:hover:bg-zinc-700 border border-zinc-200 dark:border-zinc-700 rounded-lg transition-colors hidden md:flex items-center gap-1.5"
             >
               <span>📊</span>
-              <span className="hidden sm:inline">통계</span>
+              <span>통계</span>
             </Link>
 
             <Link
               href="/level-distribution"
-              className="px-3 py-1.5 text-xs sm:text-sm font-bold text-zinc-700 dark:text-zinc-200 bg-zinc-100 dark:bg-zinc-800/80 hover:bg-zinc-200 dark:hover:bg-zinc-700 border border-zinc-200 dark:border-zinc-700 rounded-lg transition-colors flex items-center gap-1.5"
+              className="px-3 py-1.5 text-xs sm:text-sm font-bold text-zinc-700 dark:text-zinc-200 bg-zinc-100 dark:bg-zinc-800/80 hover:bg-zinc-200 dark:hover:bg-zinc-700 border border-zinc-200 dark:border-zinc-700 rounded-lg transition-colors hidden md:flex items-center gap-1.5"
             >
               <span>📈</span>
-              <span className="hidden sm:inline">분포</span>
+              <span>분포</span>
             </Link>
 
             <Link
               href="/export"
-              className="px-3 py-1.5 text-xs sm:text-sm font-bold text-zinc-700 dark:text-zinc-200 bg-zinc-100 dark:bg-zinc-800/80 hover:bg-zinc-200 dark:hover:bg-zinc-700 border border-zinc-200 dark:border-zinc-700 rounded-lg transition-colors flex items-center gap-1.5"
+              className="px-3 py-1.5 text-xs sm:text-sm font-bold text-zinc-700 dark:text-zinc-200 bg-zinc-100 dark:bg-zinc-800/80 hover:bg-zinc-200 dark:hover:bg-zinc-700 border border-zinc-200 dark:border-zinc-700 rounded-lg transition-colors hidden md:flex items-center gap-1.5"
             >
               <span>📸</span>
-              <span className="hidden sm:inline">사진관</span>
+              <span>사진관</span>
             </Link>
 
             <button
@@ -445,32 +452,29 @@ export default function Home() {
                   <div className="flex items-center gap-1 bg-zinc-100 dark:bg-zinc-950/80 p-1 rounded-lg">
                     <button
                       onClick={() => setActiveTab("all")}
-                      className={`px-3 py-1.5 text-xs font-black rounded-md transition-all cursor-pointer ${
-                        activeTab === "all"
-                          ? "bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-xs"
-                          : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-200"
-                      }`}
+                      className={`px-3 py-1.5 text-xs font-black rounded-md transition-all cursor-pointer ${activeTab === "all"
+                        ? "bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-xs"
+                        : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-200"
+                        }`}
                     >
                       전체 ({((playerData.best?.length || 0) + (playerData.new?.length || 0))})
                     </button>
                     <button
                       onClick={() => setActiveTab("best")}
-                      className={`px-3 py-1.5 text-xs font-black rounded-md transition-all cursor-pointer flex items-center gap-1.5 ${
-                        activeTab === "best"
-                          ? "bg-amber-500 text-zinc-950 shadow-xs"
-                          : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-200"
-                      }`}
+                      className={`px-3 py-1.5 text-xs font-black rounded-md transition-all cursor-pointer flex items-center gap-1.5 ${activeTab === "best"
+                        ? "bg-amber-500 text-zinc-950 shadow-xs"
+                        : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-200"
+                        }`}
                     >
                       <span>BEST 30</span>
                       <span className="text-[10px] opacity-80">({playerData.best?.length || 0})</span>
                     </button>
                     <button
                       onClick={() => setActiveTab("new")}
-                      className={`px-3 py-1.5 text-xs font-black rounded-md transition-all cursor-pointer flex items-center gap-1.5 ${
-                        activeTab === "new"
-                          ? "bg-sky-500 text-white shadow-xs"
-                          : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-200"
-                      }`}
+                      className={`px-3 py-1.5 text-xs font-black rounded-md transition-all cursor-pointer flex items-center gap-1.5 ${activeTab === "new"
+                        ? "bg-sky-500 text-white shadow-xs"
+                        : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-200"
+                        }`}
                     >
                       <span>NEW 20</span>
                       <span className="text-[10px] opacity-80">({playerData.new?.length || 0})</span>
@@ -519,6 +523,18 @@ export default function Home() {
                         trackRating={trackRating}
                         songId={songMeta?.img || null}
                         index={index}
+                        onClick={() => {
+                          const meta = songMeta || {
+                            idx: song.idx || 0,
+                            id: song.title,
+                            title: song.title,
+                            artist: "Unknown",
+                            genre: "ORIGINAL",
+                            charts: {},
+                          };
+                          setSelectedSongMeta(meta);
+                          setSelectedUserScore(song);
+                        }}
                       />
                     );
                   })}
@@ -592,6 +608,24 @@ export default function Home() {
           }}
         />
       )}
+
+      {/* 곡 상세 모달 (SDVX.in 채보 & YouTube @chunithm_humen 연동) */}
+      <SongDetailModal
+        isOpen={!!selectedSongMeta}
+        onClose={() => {
+          setSelectedSongMeta(null);
+          setSelectedUserScore(null);
+        }}
+        song={selectedSongMeta}
+        userScore={selectedUserScore}
+        initialDiff={selectedUserScore?.difficulty}
+      />
+
+      {/* 데이터 출처 및 저작권 푸터 */}
+      <Footer />
+
+      {/* 모바일 하단 네비게이션 바 */}
+      <BottomNav />
     </div>
   );
 }
