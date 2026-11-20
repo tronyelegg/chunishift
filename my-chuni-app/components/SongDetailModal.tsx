@@ -6,7 +6,6 @@ import { getProxyUrl } from "../lib/proxy";
 import { SONG_ALIASES, ARTIST_ALIASES } from "../lib/koreanSearch";
 import { getScoreRank, calculateTrackRating } from "../lib/rating";
 import {
-  getSdvxChartUrl,
   getYoutubeHumenVideoUrl,
   SDVX_BASE_URL,
   YOUTUBE_HUMEN_CHANNEL,
@@ -66,6 +65,7 @@ export default function SongDetailModal({
   initialDiff,
 }: SongDetailModalProps) {
   const [copied, setCopied] = useState(false);
+  const [sdvxCopied, setSdvxCopied] = useState(false);
   const [activeDiff, setActiveDiff] = useState<DiffKey>(() => {
     if (initialDiff) {
       const upper = initialDiff.toUpperCase();
@@ -301,7 +301,7 @@ export default function SongDetailModal({
             </span>
           </h4>
 
-          {/* YouTube @chunithm_humen 영상 검색 */}
+          {/* YouTube @chunithm_humen 채널 내부 검색 (곡명으로 채널 내 직접 검색) */}
           <a
             href={getYoutubeHumenVideoUrl(song.title, currentDiffName)}
             target="_blank"
@@ -317,21 +317,29 @@ export default function SongDetailModal({
                   YouTube 채보 영상 (@chunithm_humen)
                 </span>
                 <span className="text-[11px] text-zinc-500 dark:text-zinc-400">
-                  チュウニズム譜面保管所 {currentDiffName} 채보 플레이 영상 검색
+                  チュウニズム譜面保管所 채널 내 &quot;{song.title.length > 20 ? song.title.substring(0, 20) + "…" : song.title}&quot; 검색
                 </span>
               </div>
             </div>
-            <span className="text-xs font-bold text-red-500 px-2.5 py-1 rounded-lg bg-red-50 dark:bg-red-950/60 border border-red-500/30">
+            <span className="text-xs font-bold text-red-500 px-2.5 py-1 rounded-lg bg-red-50 dark:bg-red-950/60 border border-red-500/30 shrink-0">
               보기 ↗
             </span>
           </a>
 
-          {/* SDVX.in 채보 시트 확인 */}
-          <a
-            href={getSdvxChartUrl(song.title, currentDiffName)}
-            target="_blank"
-            rel="noreferrer"
-            className="flex items-center justify-between p-3 rounded-2xl bg-linear-to-r from-indigo-600/10 hover:from-indigo-600/20 to-purple-500/5 dark:from-indigo-950/40 dark:hover:from-indigo-900/40 border border-indigo-500/30 hover:border-indigo-500/60 transition group cursor-pointer"
+          {/* SDVX.in 채보 시트 확인 (곡명 클립보드 복사 후 sdvx.in 열기) */}
+          <button
+            onClick={async () => {
+              try {
+                await navigator.clipboard.writeText(song.title);
+                setSdvxCopied(true);
+                setTimeout(() => setSdvxCopied(false), 3000);
+                window.open(SDVX_BASE_URL, "_blank", "noreferrer");
+              } catch (e) {
+                console.error("곡명 복사 실패:", e);
+                window.open(SDVX_BASE_URL, "_blank", "noreferrer");
+              }
+            }}
+            className="w-full flex items-center justify-between p-3 rounded-2xl bg-linear-to-r from-indigo-600/10 hover:from-indigo-600/20 to-purple-500/5 dark:from-indigo-950/40 dark:hover:from-indigo-900/40 border border-indigo-500/30 hover:border-indigo-500/60 transition group cursor-pointer text-left"
           >
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-black text-sm shadow-md shadow-indigo-600/30">
@@ -339,17 +347,19 @@ export default function SongDetailModal({
               </div>
               <div className="flex flex-col">
                 <span className="text-xs font-black text-zinc-900 dark:text-white group-hover:text-indigo-500 transition">
-                  SDVX.in CHUNITHM 채보 시트
+                  {sdvxCopied ? "✅ 곡명이 클립보드에 복사되었습니다!" : "SDVX.in CHUNITHM 채보 시트"}
                 </span>
                 <span className="text-[11px] text-zinc-500 dark:text-zinc-400">
-                  sdvx.in 아카이브에서 {currentDiffName} 보면 검색 및 배치 확인
+                  {sdvxCopied
+                    ? "sdvx.in 검색창에 붙여넣기(Ctrl+V)하세요"
+                    : "곡명을 복사한 후 sdvx.in 검색창에 붙여넣기하여 보면 확인"}
                 </span>
               </div>
             </div>
-            <span className="text-xs font-bold text-indigo-500 px-2.5 py-1 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-500/30">
-              확인 ↗
+            <span className="text-xs font-bold text-indigo-500 px-2.5 py-1 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-500/30 shrink-0">
+              {sdvxCopied ? "복사됨 ✓" : "복사 & 열기 ↗"}
             </span>
-          </a>
+          </button>
         </div>
 
         {/* 5. 모달 하단 보조 액션들 */}
@@ -361,16 +371,6 @@ export default function SongDetailModal({
             <span>{copied ? "✅" : "📋"}</span>
             <span>{copied ? "곡명 복사 완료!" : "곡명 복사"}</span>
           </button>
-
-          <a
-            href={SDVX_BASE_URL}
-            target="_blank"
-            rel="noreferrer"
-            className="px-3 py-2.5 rounded-xl bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-xs font-bold text-zinc-600 dark:text-zinc-300 transition text-center"
-            title="sdvx.in 포털 열기"
-          >
-            sdvx.in 메인
-          </a>
 
           <a
             href={YOUTUBE_HUMEN_CHANNEL}
